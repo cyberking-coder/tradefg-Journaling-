@@ -3,784 +3,1053 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TradeFG — Trading Journal</title>
+  <title>TradeFG — Track Trades. Analyze PnL. Master Markets.</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.3/build/global/luxon.min.js"></script>
 </head>
 <body>
-  <!-- LANDING PAGE -->
-  <div id="landing-page" class="page active">
-    <nav class="landing-nav">
-      <div class="nav-brand">
-        <span class="brand-icon">⚡</span>
+
+<!-- ═══════════════════════════════════════════════════════════
+     LANDING PAGE
+══════════════════════════════════════════════════════════════ -->
+<div id="landing-page" class="page active">
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-brand" onclick="showPage('landing')">
+        <div class="nav-logo">
+          <span class="logo-t">T</span><span class="logo-fb">FG</span>
+        </div>
         <span class="brand-name">TradeFG</span>
       </div>
       <div class="nav-links">
         <a href="#features">Features</a>
-        <a href="#how-it-works">How It Works</a>
+        <a href="#community">Community</a>
         <a href="#pricing">Pricing</a>
+        <a href="#blog">Blog</a>
+        <a href="#contact">Contact</a>
       </div>
-      <div class="nav-actions">
-        <button class="btn btn-ghost" onclick="showPage('app')">Log In</button>
-        <button class="btn btn-primary" onclick="showPage('app')">Get Started Free</button>
+      <div class="nav-right">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+        <button class="btn-get-started" onclick="showPage('app')">Get Started</button>
       </div>
-    </nav>
+    </div>
+  </nav>
 
-    <section class="hero">
-      <div class="hero-badge">🔥 Trusted by 10,000+ traders</div>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-grid-bg"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span>🏆</span>
+        <span>THE TRADING JOURNAL THAT WORKS FOR YOU</span>
+      </div>
       <h1 class="hero-title">
-        Master Your Trades.<br />
-        <span class="gradient-text">Dominate the Market.</span>
+        Track Trades.<br />
+        <span class="hero-accent">Analyze PnL.</span><br />
+        Master Markets.
       </h1>
-      <p class="hero-subtitle">
-        The most powerful trading journal built for serious traders. Track, analyze, and improve your performance with data-driven insights.
+      <p class="hero-sub">
+        Sync your trades, journal every setup, backtest ideas, and let<br />
+        AI do the analysis.
       </p>
-      <div class="hero-cta">
-        <button class="btn btn-primary btn-xl" onclick="showPage('app')">
-          Start Journaling Free
-          <span class="btn-arrow">→</span>
-        </button>
-        <button class="btn btn-outline btn-xl">Watch Demo ▶</button>
+      <button class="btn-hero" onclick="showPage('app')">Get Started →</button>
+      <div class="hero-social-proof">
+        <div class="avatar-stack">
+          <div class="avatar av1">RK</div>
+          <div class="avatar av2">JP</div>
+          <div class="avatar av3">MS</div>
+          <div class="avatar av4">+</div>
+        </div>
+        <span>Trusted by <strong>2,000+</strong> traders &nbsp;⭐⭐⭐⭐⭐</span>
       </div>
-      <div class="hero-stats">
-        <div class="stat-item">
-          <span class="stat-num">$2.4M+</span>
-          <span class="stat-label">P&amp;L Tracked</span>
+    </div>
+
+    <!-- Dashboard Mockup -->
+    <div class="hero-mockup">
+      <div class="mockup-frame">
+        <div class="mockup-topbar">
+          <div class="mockup-dots">
+            <span class="mdot red"></span>
+            <span class="mdot yellow"></span>
+            <span class="mdot green"></span>
+          </div>
+          <div class="mockup-url">app.tradefg.io — Dashboard</div>
         </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-num">50K+</span>
-          <span class="stat-label">Trades Logged</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-num">98%</span>
-          <span class="stat-label">Satisfaction</span>
-        </div>
-      </div>
-      <div class="hero-dashboard-preview">
-        <div class="preview-bar">
-          <span class="dot red"></span>
-          <span class="dot yellow"></span>
-          <span class="dot green"></span>
-          <span class="preview-title">TradeFG Dashboard</span>
-        </div>
-        <div class="preview-content">
-          <div class="preview-cards">
-            <div class="preview-card green-card">
-              <span>Total P&amp;L</span>
-              <strong>+$12,450</strong>
+        <div class="mockup-body">
+          <!-- Sidebar -->
+          <div class="mock-sidebar">
+            <div class="mock-logo">
+              <div class="nav-logo sm"><span class="logo-t">T</span><span class="logo-fb">FG</span></div>
+              <span>TradeFG</span>
+              <span class="badge-beta">BETA</span>
             </div>
-            <div class="preview-card orange-card">
-              <span>Win Rate</span>
-              <strong>68.4%</strong>
+            <div class="mock-user">
+              <div class="mock-avatar">RK</div>
+              <div class="mock-user-info"><span>TradeFG...</span><span class="badge-elite">ELITE</span></div>
             </div>
-            <div class="preview-card blue-card">
-              <span>Avg R:R</span>
-              <strong>1:2.3</strong>
+            <div class="mock-menu-label">MENU</div>
+            <div class="mock-nav-item active">⊞ Dashboard</div>
+            <div class="mock-nav-item">≡ Trades</div>
+            <div class="mock-nav-item">📖 Journal</div>
+            <div class="mock-nav-item">📊 Analysis ›</div>
+            <div class="mock-nav-sub">Performance</div>
+            <div class="mock-nav-sub">Trade Analysis</div>
+            <div class="mock-nav-item">📈 Market</div>
+            <div class="mock-nav-item">👥 Community ›</div>
+            <div class="mock-nav-sub">Traders Lounge</div>
+            <div class="mock-nav-sub">Trade Rooms <span class="badge-soon">SOON</span></div>
+            <div class="mock-nav-sub">Friends</div>
+            <div class="mock-nav-sub">Leaderboard</div>
+          </div>
+          <!-- Main -->
+          <div class="mock-main">
+            <div class="mock-header">
+              <div>
+                <div class="mock-page-title">Dashboard</div>
+                <div class="mock-page-date">Tue, Jan 27</div>
+              </div>
+              <div class="mock-search">🔍 Search...</div>
+              <div class="mock-header-actions">
+                <span class="mock-time">🕐 12:45:33 AM</span>
+                <span class="mock-bell">🔔</span>
+              </div>
             </div>
-            <div class="preview-card purple-card">
-              <span>Total Trades</span>
-              <strong>247</strong>
+            <!-- KPI row -->
+            <div class="mock-kpis">
+              <div class="mock-kpi blue-card">
+                <div class="mock-kpi-icon blue">💲</div>
+                <div class="mock-kpi-label">TOTAL P&L</div>
+                <div class="mock-kpi-val green">+$3618.50</div>
+                <div class="mock-kpi-sub">→ 11 trades</div>
+              </div>
+              <div class="mock-kpi">
+                <div class="mock-kpi-icon orange">⏱</div>
+                <div class="mock-kpi-label">UNREALIZED</div>
+                <div class="mock-kpi-val green">+$3567.21</div>
+                <div class="mock-kpi-sub">8 open positions</div>
+              </div>
+              <div class="mock-kpi">
+                <div class="mock-kpi-icon green-i">✓</div>
+                <div class="mock-kpi-label">REALIZED</div>
+                <div class="mock-kpi-val green">+$51.29</div>
+                <div class="mock-kpi-sub">3 closed trades</div>
+              </div>
+              <div class="mock-kpi">
+                <div class="mock-kpi-icon purple-i">◎</div>
+                <div class="mock-kpi-label">WIN RATE</div>
+                <div class="mock-kpi-val white">67%</div>
+                <div class="mock-winbar"><div class="mock-winbar-fill" style="width:67%"></div></div>
+              </div>
+            </div>
+            <!-- Chart + Calendar row -->
+            <div class="mock-row">
+              <div class="mock-chart-area">
+                <div class="mock-chart-header">
+                  <div>
+                    <div class="mock-chart-label">PERFORMANCE</div>
+                    <div class="mock-chart-val">+$3591.53 <span class="mock-badge-up">▲ 999.9%</span></div>
+                  </div>
+                  <div class="mock-filters">
+                    <span>1D</span><span class="active">1W</span><span>1M</span><span>3M</span><span>ALL</span>
+                  </div>
+                </div>
+                <canvas id="mockChart" height="80"></canvas>
+              </div>
+              <div class="mock-calendar">
+                <div class="mock-cal-header">Monthly P&L <span>January 2026</span></div>
+                <div class="mock-cal-grid">
+                  <span class="ch">M</span><span class="ch">T</span><span class="ch">W</span><span class="ch">T</span><span class="ch">F</span><span class="ch">S</span><span class="ch">S</span>
+                  <span class="cd"></span><span class="cd"></span><span class="cd"></span><span class="cd"></span><span class="cd"></span><span class="cd"></span><span class="cd profit">4<br/><small>+$37</small></span>
+                  <span class="cd profit">5<br/><small>+$3.1k</small></span><span class="cd">6</span><span class="cd">7</span><span class="cd">8</span><span class="cd profit">9<br/><small>+$615</small></span><span class="cd">10</span><span class="cd">11</span>
+                  <span class="cd">12</span><span class="cd">13</span><span class="cd">14</span><span class="cd">15</span><span class="cd">16</span><span class="cd">17</span><span class="cd">18</span>
+                  <span class="cd">19</span><span class="cd">20</span><span class="cd">21</span><span class="cd">22</span><span class="cd">23</span><span class="cd loss today">24<br/><small>-$10</small></span><span class="cd">25</span>
+                  <span class="cd">26</span><span class="cd">27</span><span class="cd">28</span><span class="cd">29</span><span class="cd">30</span><span class="cd">31</span>
+                </div>
+                <div class="mock-cal-legend"><span class="dot-profit"></span>Profit <span class="dot-loss"></span>Loss</div>
+              </div>
             </div>
           </div>
-          <div class="preview-chart-area">
-            <div class="preview-chart-line"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHAT YOU GET -->
+  <section class="features-section" id="features">
+    <div class="section-badge">WHAT YOU GET</div>
+    <h2 class="section-title">Everything You Need to<br />Master Your Trading</h2>
+    <p class="section-sub">From the moment you place a trade to the lessons you take from it — we've built tools for every step of your journey.</p>
+
+    <!-- Feature 1: Backtesting -->
+    <div class="feature-block">
+      <div class="feature-text">
+        <div class="feature-icon-wrap blue-icon">⏮</div>
+        <h3><span class="feat-accent">Strategy</span> Backtesting</h3>
+        <p>Got a strategy idea? Test it on real historical data before risking real money. Pick a symbol, choose your timeframe, and replay the market candle by candle — opening and closing trades as if you were live.</p>
+        <ul class="feature-list">
+          <li><span class="check blue">✓</span> Replay trades on real market data</li>
+          <li><span class="check blue">✓</span> Track performance as you backtest</li>
+          <li><span class="check blue">✓</span> Compare strategies side by side</li>
+        </ul>
+        <button class="btn-learn" onclick="showPage('app')">Learn More</button>
+      </div>
+      <div class="feature-screenshot">
+        <div class="screenshot-frame">
+          <div class="screenshot-topbar">
+            <div class="ss-dots"><span></span><span></span><span></span></div>
+            <span class="ss-title">Backtesting</span>
+            <div class="ss-actions"><span>▷ Replay</span><span>Sessions</span></div>
+          </div>
+          <div class="ss-chart-area">
+            <div class="ss-chart-label">EURUSD · 1h · TradeFG</div>
+            <div class="ss-candles">
+              <div class="candle-chart-preview">
+                <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
+                  <!-- Candlesticks -->
+                  <line x1="20" y1="20" x2="20" y2="80" stroke="#ff4444" stroke-width="1"/>
+                  <rect x="16" y="35" width="8" height="30" fill="#ff4444"/>
+                  <line x1="40" y1="30" x2="40" y2="90" stroke="#00e676" stroke-width="1"/>
+                  <rect x="36" y="45" width="8" height="25" fill="#00e676"/>
+                  <line x1="60" y1="25" x2="60" y2="75" stroke="#ff4444" stroke-width="1"/>
+                  <rect x="56" y="35" width="8" height="28" fill="#ff4444"/>
+                  <line x1="80" y1="15" x2="80" y2="65" stroke="#00e676" stroke-width="1"/>
+                  <rect x="76" y="25" width="8" height="30" fill="#00e676"/>
+                  <line x1="100" y1="20" x2="100" y2="70" stroke="#ff4444" stroke-width="1"/>
+                  <rect x="96" y="30" width="8" height="28" fill="#ff4444"/>
+                  <line x1="120" y1="30" x2="120" y2="85" stroke="#ff4444" stroke-width="1"/>
+                  <rect x="116" y="42" width="8" height="25" fill="#ff4444"/>
+                  <line x1="140" y1="35" x2="140" y2="90" stroke="#00e676" stroke-width="1"/>
+                  <rect x="136" y="48" width="8" height="28" fill="#00e676"/>
+                  <line x1="160" y1="40" x2="160" y2="95" stroke="#00e676" stroke-width="1"/>
+                  <rect x="156" y="52" width="8" height="25" fill="#00e676"/>
+                  <line x1="180" y1="50" x2="180" y2="100" stroke="#ff4444" stroke-width="1"/>
+                  <rect x="176" y="62" width="8" height="22" fill="#ff4444"/>
+                  <line x1="200" y1="45" x2="200" y2="95" stroke="#00e676" stroke-width="1"/>
+                  <rect x="196" y="55" width="8" height="28" fill="#00e676"/>
+                  <line x1="220" y1="55" x2="220" y2="105" stroke="#00e676" stroke-width="1"/>
+                  <rect x="216" y="65" width="8" height="25" fill="#00e676"/>
+                  <line x1="240" y1="60" x2="240" y2="110" stroke="#ff4444" stroke-width="1"/>
+                  <rect x="236" y="72" width="8" height="22" fill="#ff4444"/>
+                  <line x1="260" y1="50" x2="260" y2="100" stroke="#00e676" stroke-width="1"/>
+                  <rect x="256" y="60" width="8" height="28" fill="#00e676"/>
+                  <!-- Price line -->
+                  <line x1="0" y1="65" x2="300" y2="65" stroke="#3b82f6" stroke-width="0.5" stroke-dasharray="4,4" opacity="0.4"/>
+                  <!-- Entry/Exit markers -->
+                  <circle cx="120" cy="67" r="4" fill="#3b82f6"/>
+                  <circle cx="220" cy="68" r="4" fill="#00e676"/>
+                </svg>
+              </div>
+            </div>
+            <div class="ss-stats-row">
+              <div class="ss-stat"><span>Net P&L</span><strong class="green">+$102.94</strong></div>
+              <div class="ss-stat"><span>Trades</span><strong>12</strong></div>
+              <div class="ss-stat"><span>Win Rate</span><strong class="green">75%</strong></div>
+              <div class="ss-stat"><span>Profit Factor</span><strong>2.1</strong></div>
+            </div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
 
-    <section class="features" id="features">
-      <div class="section-header">
-        <span class="section-tag">FEATURES</span>
-        <h2>Everything You Need to <span class="gradient-text">Trade Better</span></h2>
-        <p>From trade logging to advanced analytics — all in one powerful platform.</p>
+    <!-- Feature 2: Journaling -->
+    <div class="feature-block reverse">
+      <div class="feature-screenshot">
+        <div class="screenshot-frame journal-frame">
+          <div class="screenshot-topbar">
+            <div class="ss-dots"><span></span><span></span><span></span></div>
+            <span class="ss-title">Journal</span>
+          </div>
+          <div class="journal-preview">
+            <div class="jp-sidebar">
+              <div class="jp-header">Trade Journal <span class="jp-count">6 trades</span></div>
+              <div class="jp-tabs"><span class="active">All</span><span>Journaled</span><span>Pending</span></div>
+              <div class="jp-item active">
+                <div class="jp-sym">🟡 XAUUSD <span class="badge-new">NEW</span></div>
+                <div class="jp-meta">Long · $4448.08 · +$25.12</div>
+                <div class="jp-date">1/5/2026, 7:17:08 PM</div>
+              </div>
+              <div class="jp-item">
+                <div class="jp-sym">🟡 BTCUSD</div>
+                <div class="jp-meta jp-loss">Short · $311185.20 · -$8.65</div>
+                <div class="jp-date">04/3/2025, 5:31:04 PM</div>
+              </div>
+              <div class="jp-item">
+                <div class="jp-sym">🟡 BTCUSD</div>
+                <div class="jp-meta">Long · $67498.64 · +$534.82</div>
+                <div class="jp-date">12/27/2025, 8:24:20 PM</div>
+              </div>
+            </div>
+            <div class="jp-main">
+              <div class="jp-trade-header">🟡 XAUUSD <span class="badge-winner">WINNER</span></div>
+              <div class="jp-trade-meta">Long · Entry $4448.08 · Size 0.01 · 1/5/2026, 7:17:08 PM</div>
+              <div class="jp-field"><label>PRE-TRADE ANALYSIS</label><div class="jp-input">What did you see? Plan, thesis, levels, risk...</div></div>
+              <div class="jp-field"><label>POST-TRADE REVIEW</label><div class="jp-input">What happened? Execution, slippage, improvements...</div></div>
+              <div class="jp-row">
+                <div class="jp-field"><label>EMOTIONS</label><div class="jp-input sm">Calm, anxious, FOMO, confident...</div></div>
+                <div class="jp-field"><label>LESSONS LEARNED</label><div class="jp-input sm">Key takeaways to repeat or avoid...</div></div>
+              </div>
+              <div class="jp-row">
+                <div class="jp-field"><label>TAGS</label><div class="jp-input sm">breakout, trend, news (comma separated)</div></div>
+                <div class="jp-field"><label>RATING <span class="rating-val">5/10</span></label><div class="jp-slider"><div class="jp-slider-fill"></div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">📊</div>
-          <h3>Advanced Analytics</h3>
-          <p>Deep dive into your performance with equity curves, win rate breakdowns, and risk analysis.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">📝</div>
-          <h3>Trade Journal</h3>
-          <p>Log every trade with notes, screenshots, and emotions. Never miss a learning opportunity.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🎯</div>
-          <h3>Risk Management</h3>
-          <p>Track your R:R ratio, max drawdown, and position sizing in real-time.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🔔</div>
-          <h3>Smart Alerts</h3>
-          <p>Set performance alerts and get notified when you hit your daily goals or limits.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">📈</div>
-          <h3>Equity Curve</h3>
-          <p>Visualize your account growth over time with beautiful, interactive charts.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🔒</div>
-          <h3>Secure &amp; Private</h3>
-          <p>Your data is encrypted and never shared. 100% private trading journal.</p>
-        </div>
+      <div class="feature-text">
+        <div class="feature-icon-wrap journal-icon">📋</div>
+        <h3><span class="feat-white">Rich</span> <span class="feat-accent">Trade Journaling</span></h3>
+        <p>Every trade tells a story. Add notes about your setup, tag your strategy, attach screenshots, and track how you felt. When you review your journal later, the patterns become obvious.</p>
+        <ul class="feature-list">
+          <li><span class="check blue">✓</span> Notes, tags &amp; screenshot attachments</li>
+          <li><span class="check blue">✓</span> Emotional tracking &amp; trade ratings</li>
+          <li><span class="check blue">✓</span> Pre-trade checklists &amp; templates</li>
+        </ul>
+        <button class="btn-learn" onclick="showPage('app')">Learn More</button>
       </div>
-    </section>
+    </div>
 
-    <section class="how-it-works" id="how-it-works">
-      <div class="section-header">
-        <span class="section-tag">HOW IT WORKS</span>
-        <h2>Start Improving in <span class="gradient-text">3 Simple Steps</span></h2>
+    <!-- Feature 3: Analytics -->
+    <div class="feature-block">
+      <div class="feature-text">
+        <div class="feature-icon-wrap analytics-icon">📊</div>
+        <h3><span class="feat-white">Powerful</span> <span class="feat-accent">Analytics</span></h3>
+        <p>See your trading performance laid out clearly. Equity curves, calendar heatmaps, session breakdowns, profit factor, risk/reward — everything is calculated automatically so you can focus on improving.</p>
+        <ul class="feature-list">
+          <li><span class="check green">✓</span> Equity curves &amp; drawdown charts</li>
+          <li><span class="check green">✓</span> Calendar heatmap with daily P&amp;L</li>
+          <li><span class="check green">✓</span> Breakdowns by session, symbol &amp; tag</li>
+        </ul>
+        <button class="btn-learn" onclick="showPage('app')">Learn More</button>
       </div>
-      <div class="steps-grid">
-        <div class="step-card">
-          <div class="step-number">01</div>
-          <h3>Log Your Trades</h3>
-          <p>Add your trades with entry, exit, size, and notes. Import from your broker in seconds.</p>
-        </div>
-        <div class="step-arrow">→</div>
-        <div class="step-card">
-          <div class="step-number">02</div>
-          <h3>Review Analytics</h3>
-          <p>See your performance metrics, identify patterns, and spot your strengths and weaknesses.</p>
-        </div>
-        <div class="step-arrow">→</div>
-        <div class="step-card">
-          <div class="step-number">03</div>
-          <h3>Improve &amp; Grow</h3>
-          <p>Use data-driven insights to refine your strategy and increase your profitability.</p>
+      <div class="feature-screenshot">
+        <div class="screenshot-frame analytics-frame">
+          <div class="screenshot-topbar">
+            <div class="ss-dots"><span></span><span></span><span></span></div>
+            <span class="ss-title">Performance Analytics</span>
+          </div>
+          <div class="analytics-preview">
+            <div class="ap-filters">
+              <span>TIME PERIOD:</span>
+              <button>Today</button><button>7 Days</button><button>30 Days</button><button>3 Months</button><button>1 Year</button><button class="active">All Time</button>
+              <span style="margin-left:8px">FILTER BY:</span>
+              <button class="active">All Trades</button><button>Winners</button><button>Losers</button>
+            </div>
+            <div class="ap-kpis">
+              <div class="ap-kpi"><div class="ap-kpi-icon blue">💲</div><div class="ap-kpi-val">$57.39</div><div class="ap-kpi-label">TOTAL P&L</div></div>
+              <div class="ap-kpi"><div class="ap-kpi-icon purple">◎</div><div class="ap-kpi-val">66.7%</div><div class="ap-kpi-label">WIN RATE</div></div>
+              <div class="ap-kpi"><div class="ap-kpi-icon orange">📈</div><div class="ap-kpi-val">7.63</div><div class="ap-kpi-label">PROFIT FACTOR</div></div>
+              <div class="ap-kpi"><div class="ap-kpi-icon green-i">$</div><div class="ap-kpi-val">$19.13</div><div class="ap-kpi-label">EXPECTANCY</div></div>
+            </div>
+            <div class="ap-row">
+              <div class="ap-quick-stats">
+                <div class="ap-qs-title">Quick Stats</div>
+                <div class="ap-qs-grid">
+                  <div><span>AVG WINNER</span><strong class="green">$33.02</strong></div>
+                  <div><span>AVG LOSER</span><strong class="red">-$8.65</strong></div>
+                  <div><span>BEST TRADE</span><strong class="green">$37.40</strong></div>
+                  <div><span>WORST TRADE</span><strong class="red">-$8.65</strong></div>
+                  <div><span>WIN STREAK</span><strong>1 trades</strong></div>
+                  <div><span>LOSE STREAK</span><strong>1 trades</strong></div>
+                  <div><span>RISK/REWARD</span><strong>1:3.82</strong></div>
+                  <div><span>WIN TRADES</span><strong>8</strong></div>
+                </div>
+              </div>
+              <div class="ap-equity">
+                <div class="ap-qs-title">Equity Curve</div>
+                <canvas id="apChart" height="80"></canvas>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </section>
+    </div>
 
-    <section class="pricing" id="pricing">
-      <div class="section-header">
-        <span class="section-tag">PRICING</span>
-        <h2>Simple, <span class="gradient-text">Transparent Pricing</span></h2>
-      </div>
-      <div class="pricing-grid">
-        <div class="pricing-card">
-          <h3>Free</h3>
-          <div class="price">$0<span>/mo</span></div>
-          <ul class="pricing-features">
-            <li>✓ 50 trades/month</li>
-            <li>✓ Basic analytics</li>
-            <li>✓ Trade journal</li>
-            <li class="disabled">✗ Advanced charts</li>
-            <li class="disabled">✗ Export data</li>
-          </ul>
-          <button class="btn btn-outline" onclick="showPage('app')">Get Started</button>
-        </div>
-        <div class="pricing-card featured">
-          <div class="popular-badge">MOST POPULAR</div>
-          <h3>Pro</h3>
-          <div class="price">$19<span>/mo</span></div>
-          <ul class="pricing-features">
-            <li>✓ Unlimited trades</li>
-            <li>✓ Advanced analytics</li>
-            <li>✓ Trade journal</li>
-            <li>✓ Advanced charts</li>
-            <li>✓ Export data (CSV/PDF)</li>
-          </ul>
-          <button class="btn btn-primary" onclick="showPage('app')">Start Free Trial</button>
-        </div>
-        <div class="pricing-card">
-          <h3>Elite</h3>
-          <div class="price">$49<span>/mo</span></div>
-          <ul class="pricing-features">
-            <li>✓ Everything in Pro</li>
-            <li>✓ Multi-account support</li>
-            <li>✓ AI trade insights</li>
-            <li>✓ Priority support</li>
-            <li>✓ Custom reports</li>
-          </ul>
-          <button class="btn btn-outline" onclick="showPage('app')">Contact Sales</button>
+    <!-- Feature 4: AI Reports -->
+    <div class="feature-block reverse">
+      <div class="feature-screenshot">
+        <div class="screenshot-frame ai-frame">
+          <div class="screenshot-topbar">
+            <div class="ss-dots"><span></span><span></span><span></span></div>
+            <span class="ss-title">AI Trade Report</span>
+          </div>
+          <div class="ai-preview">
+            <div class="ai-grade-section">
+              <div class="ai-grade">B+</div>
+              <div class="ai-grade-label">Overall Grade</div>
+            </div>
+            <div class="ai-metrics">
+              <div class="ai-metric"><span class="ai-bar-label">Win Rate</span><div class="ai-bar"><div class="ai-bar-fill" style="width:68%;background:#3b82f6"></div></div><span>68%</span></div>
+              <div class="ai-metric"><span class="ai-bar-label">Risk Mgmt</span><div class="ai-bar"><div class="ai-bar-fill" style="width:75%;background:#00e676"></div></div><span>75%</span></div>
+              <div class="ai-metric"><span class="ai-bar-label">Discipline</span><div class="ai-bar"><div class="ai-bar-fill" style="width:55%;background:#ffa500"></div></div><span>55%</span></div>
+              <div class="ai-metric"><span class="ai-bar-label">Consistency</span><div class="ai-bar"><div class="ai-bar-fill" style="width:82%;background:#3b82f6"></div></div><span>82%</span></div>
+            </div>
+            <div class="ai-insights">
+              <div class="ai-insight">💡 You tend to cut winners too early — avg winner R:R is 1.2 vs your target of 2.0</div>
+              <div class="ai-insight warn">⚠️ Revenge trading detected on 3 sessions — losses spike after 2+ loss streak</div>
+              <div class="ai-insight good">✓ Your morning session (9-11am) has 78% win rate — stick to this window</div>
+            </div>
+          </div>
         </div>
       </div>
-    </section>
+      <div class="feature-text">
+        <div class="feature-icon-wrap ai-icon">🤖</div>
+        <h3><span class="feat-white">AI-Powered</span> <span class="feat-accent">Trade Reports</span></h3>
+        <p>Our AI analyzes your entire trade history and breaks it down — your win rate, profit factor, risk habits, emotional patterns, blind spots, and even revenge trading tendencies — then gives you a grade and specific things to work on.</p>
+        <ul class="feature-list">
+          <li><span class="check blue">✓</span> Personalized performance grade</li>
+          <li><span class="check blue">✓</span> Identify blind spots &amp; bad habits</li>
+          <li><span class="check blue">✓</span> Actionable improvement suggestions</li>
+        </ul>
+        <button class="btn-learn" onclick="showPage('app')">Learn More</button>
+      </div>
+    </div>
+  </section>
 
-    <section class="cta-section">
-      <h2>Ready to <span class="gradient-text">Level Up</span> Your Trading?</h2>
-      <p>Join thousands of traders who improved their performance with TradeFG.</p>
-      <button class="btn btn-primary btn-xl" onclick="showPage('app')">
-        Start Journaling Free — No Credit Card Required
-      </button>
-    </section>
+  <!-- COMMUNITY -->
+  <section class="community-section" id="community">
+    <div class="section-badge">COMMUNITY</div>
+    <h2 class="section-title">Trade Together.<br /><span class="feat-accent">Grow Together.</span></h2>
+    <p class="section-sub">Join thousands of traders sharing ideas, strategies, and accountability.</p>
+    <div class="community-grid">
+      <div class="community-card">
+        <div class="cc-icon">💬</div>
+        <h4>Traders Lounge</h4>
+        <p>Discuss markets, share ideas, and connect with traders worldwide.</p>
+      </div>
+      <div class="community-card">
+        <div class="cc-icon">🏠</div>
+        <h4>Trade Rooms <span class="badge-soon sm">SOON</span></h4>
+        <p>Join live trading rooms and watch experienced traders in real-time.</p>
+      </div>
+      <div class="community-card">
+        <div class="cc-icon">👥</div>
+        <h4>Friends</h4>
+        <p>Follow top traders and compare your stats on the leaderboard.</p>
+      </div>
+      <div class="community-card">
+        <div class="cc-icon">🏆</div>
+        <h4>Leaderboard</h4>
+        <p>See who's crushing it and learn from the best traders each week.</p>
+      </div>
+    </div>
+  </section>
 
-    <footer class="landing-footer">
+  <!-- PRICING -->
+  <section class="pricing-section" id="pricing">
+    <div class="section-badge">PRICING</div>
+    <h2 class="section-title">Simple, Transparent<br /><span class="feat-accent">Pricing</span></h2>
+    <p class="section-sub">Start free. Upgrade when you're ready.</p>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">$0<span>/mo</span></div>
+        <div class="plan-desc">Perfect to get started</div>
+        <ul class="plan-features">
+          <li><span class="check blue">✓</span> Up to 50 trades/month</li>
+          <li><span class="check blue">✓</span> Basic journal &amp; analytics</li>
+          <li><span class="check blue">✓</span> Calendar heatmap</li>
+          <li class="dim"><span>✗</span> MT4/MT5 sync</li>
+          <li class="dim"><span>✗</span> AI reports</li>
+          <li class="dim"><span>✗</span> Backtesting</li>
+        </ul>
+        <button class="btn-plan outline" onclick="showPage('app')">Get Started Free</button>
+      </div>
+      <div class="pricing-card featured">
+        <div class="plan-popular">MOST POPULAR</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">$19<span>/mo</span></div>
+        <div class="plan-desc">For serious traders</div>
+        <ul class="plan-features">
+          <li><span class="check blue">✓</span> Unlimited trades</li>
+          <li><span class="check blue">✓</span> Full journal &amp; analytics</li>
+          <li><span class="check blue">✓</span> MT4/MT5 auto-sync</li>
+          <li><span class="check blue">✓</span> Strategy backtesting</li>
+          <li><span class="check blue">✓</span> AI trade reports</li>
+          <li><span class="check blue">✓</span> Export CSV/PDF</li>
+        </ul>
+        <button class="btn-plan filled" onclick="showPage('app')">Start Free Trial</button>
+      </div>
+      <div class="pricing-card">
+        <div class="plan-name">Elite</div>
+        <div class="plan-price">$49<span>/mo</span></div>
+        <div class="plan-desc">For prop firm traders</div>
+        <ul class="plan-features">
+          <li><span class="check blue">✓</span> Everything in Pro</li>
+          <li><span class="check blue">✓</span> Multi-account support</li>
+          <li><span class="check blue">✓</span> Trade rooms access</li>
+          <li><span class="check blue">✓</span> Priority support</li>
+          <li><span class="check blue">✓</span> Custom AI model</li>
+          <li><span class="check blue">✓</span> API access</li>
+        </ul>
+        <button class="btn-plan outline" onclick="showPage('app')">Go Elite</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section class="testimonials-section">
+    <div class="section-badge">TESTIMONIALS</div>
+    <h2 class="section-title">What Traders Are <span class="feat-accent">Saying</span></h2>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="t-stars">⭐⭐⭐⭐⭐</div>
+        <p>"TradeFG completely changed how I review my trades. The analytics show patterns I never would have noticed on my own."</p>
+        <div class="t-author"><div class="t-avatar">AK</div><div><strong>Alex K.</strong><span>Forex Trader</span></div></div>
+      </div>
+      <div class="testimonial-card featured-t">
+        <div class="t-stars">⭐⭐⭐⭐⭐</div>
+        <p>"The AI reports are insane. It told me I was revenge trading on Mondays — and it was 100% right. Fixed that habit, win rate went from 48% to 67%."</p>
+        <div class="t-author"><div class="t-avatar">JP</div><div><strong>James P.</strong><span>Crypto &amp; Futures Trader</span></div></div>
+      </div>
+      <div class="testimonial-card">
+        <div class="t-stars">⭐⭐⭐⭐⭐</div>
+        <p>"The backtesting feature is a game changer. I can test strategies without risking a single dollar. Worth every penny."</p>
+        <div class="t-author"><div class="t-avatar">SR</div><div><strong>Sara R.</strong><span>Stocks Day Trader</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="cta-glow"></div>
+    <h2>Start Mastering Your<br /><span class="feat-accent">Trading Today</span></h2>
+    <p>Join 2,000+ traders who improved their performance with TradeFG. Free to start.</p>
+    <button class="btn-hero" onclick="showPage('app')">Get Started Free →</button>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
       <div class="footer-brand">
-        <span class="brand-icon">⚡</span>
+        <div class="nav-logo sm"><span class="logo-t">T</span><span class="logo-fb">FG</span></div>
         <span class="brand-name">TradeFG</span>
+        <p>The trading journal that works for you.</p>
       </div>
-      <p class="footer-copy">© 2024 TradeFG. All rights reserved. Built for traders, by traders.</p>
-      <div class="footer-links">
-        <a href="#">Privacy</a>
-        <a href="#">Terms</a>
-        <a href="#">Support</a>
+      <div class="footer-links-col">
+        <h5>Product</h5>
+        <a href="#">Features</a><a href="#">Pricing</a><a href="#">Changelog</a><a href="#">Roadmap</a>
       </div>
-    </footer>
-  </div>
+      <div class="footer-links-col">
+        <h5>Community</h5>
+        <a href="#">Traders Lounge</a><a href="#">Leaderboard</a><a href="#">Friends</a><a href="#">Blog</a>
+      </div>
+      <div class="footer-links-col">
+        <h5>Company</h5>
+        <a href="#">About</a><a href="#">Contact</a><a href="#">Privacy</a><a href="#">Terms</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2024 TradeFG. All rights reserved.</span>
+      <div class="footer-social">
+        <a href="#">𝕏</a><a href="#">in</a><a href="#">▶</a>
+      </div>
+    </div>
+  </footer>
+</div>
 
-  <!-- APP PAGE -->
-  <div id="app-page" class="page">
-    <!-- Sidebar -->
+<!-- ═══════════════════════════════════════════════════════════
+     APP PAGE
+══════════════════════════════════════════════════════════════ -->
+<div id="app-page" class="page">
+  <div class="app-layout">
+
+    <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <span class="brand-icon">⚡</span>
-        <span class="brand-name">TradeFG</span>
-        <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+      <div class="sb-header">
+        <button class="sb-collapse" onclick="toggleSidebar()">◀</button>
+        <div class="sb-logo-wrap" onclick="showPage('landing')">
+          <div class="nav-logo sm"><span class="logo-t">T</span><span class="logo-fb">FG</span></div>
+          <span class="brand-name">TradeFG</span>
+          <span class="badge-beta">BETA</span>
+        </div>
       </div>
-      <nav class="sidebar-nav">
-        <a class="nav-item active" onclick="showView('dashboard')" data-view="dashboard">
-          <span class="nav-icon">📊</span>
-          <span class="nav-label">Dashboard</span>
+
+      <div class="sb-user">
+        <div class="sb-user-avatar">RK</div>
+        <div class="sb-user-info">
+          <span class="sb-user-name">TradeFG...</span>
+          <div class="sb-user-email">rohan@gmail.com</div>
+        </div>
+        <span class="badge-elite">ELITE</span>
+        <button class="sb-chevron">›</button>
+      </div>
+
+      <div class="sb-section-label">MENU</div>
+      <nav class="sb-nav">
+        <a class="sb-item active" onclick="showView('dashboard')" data-view="dashboard">
+          <span class="sb-icon">⊞</span><span class="sb-label">Dashboard</span>
+          <span class="sb-active-dot"></span>
         </a>
-        <a class="nav-item" onclick="showView('trades')" data-view="trades">
-          <span class="nav-icon">📋</span>
-          <span class="nav-label">Trade Log</span>
+        <a class="sb-item" onclick="showView('trades')" data-view="trades">
+          <span class="sb-icon">≡</span><span class="sb-label">Trades</span>
         </a>
-        <a class="nav-item" onclick="showView('analytics')" data-view="analytics">
-          <span class="nav-icon">📈</span>
-          <span class="nav-label">Analytics</span>
+        <a class="sb-item" onclick="showView('journal')" data-view="journal">
+          <span class="sb-icon">📖</span><span class="sb-label">Journal</span>
         </a>
-        <a class="nav-item" onclick="showView('journal')" data-view="journal">
-          <span class="nav-icon">📝</span>
-          <span class="nav-label">Journal</span>
+        <div class="sb-group">
+          <a class="sb-item" onclick="toggleGroup('analysis')" data-group="analysis">
+            <span class="sb-icon">📊</span><span class="sb-label">Analysis</span>
+            <span class="sb-arrow" id="arrow-analysis">▲</span>
+          </a>
+          <div class="sb-sub-items" id="group-analysis">
+            <a class="sb-sub" onclick="showView('performance')" data-view="performance">Performance</a>
+            <a class="sb-sub" onclick="showView('trade-analysis')" data-view="trade-analysis">Trade Analysis</a>
+          </div>
+        </div>
+        <a class="sb-item" onclick="showView('market')" data-view="market">
+          <span class="sb-icon">📈</span><span class="sb-label">Market</span>
         </a>
-        <a class="nav-item" onclick="showView('calendar')" data-view="calendar">
-          <span class="nav-icon">📅</span>
-          <span class="nav-label">Calendar</span>
-        </a>
-        <a class="nav-item" onclick="showView('settings')" data-view="settings">
-          <span class="nav-icon">⚙️</span>
-          <span class="nav-label">Settings</span>
+        <div class="sb-group">
+          <a class="sb-item" onclick="toggleGroup('community')" data-group="community">
+            <span class="sb-icon">👥</span><span class="sb-label">Community</span>
+            <span class="sb-arrow" id="arrow-community">▲</span>
+          </a>
+          <div class="sb-sub-items" id="group-community">
+            <a class="sb-sub" onclick="showView('lounge')" data-view="lounge">Traders Lounge</a>
+            <a class="sb-sub" onclick="showView('rooms')" data-view="rooms">Trade Rooms <span class="badge-soon xs">SOON</span></a>
+            <a class="sb-sub" onclick="showView('friends')" data-view="friends">Friends</a>
+            <a class="sb-sub" onclick="showView('leaderboard')" data-view="leaderboard">Leaderboard</a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="sb-coming-soon">
+        <button class="btn-coming-soon" onclick="showView('coming-soon')">
+          <span>✨ Coming Soon</span>
+          <span class="badge-new">NEW</span>
+        </button>
+      </div>
+
+      <div class="sb-section-label">SUPPORT</div>
+      <nav class="sb-nav">
+        <a class="sb-item" onclick="showView('settings')" data-view="settings">
+          <span class="sb-icon">⚙️</span><span class="sb-label">Settings</span>
         </a>
       </nav>
-      <div class="sidebar-footer">
-        <div class="user-avatar">RK</div>
-        <div class="user-info">
-          <span class="user-name">Rohan K.</span>
-          <span class="user-plan">Pro Plan</span>
-        </div>
-        <button class="logout-btn" onclick="showPage('landing')" title="Back to Home">←</button>
-      </div>
     </aside>
 
-    <!-- Main Content -->
-    <main class="main-content">
-      <!-- Top Bar -->
-      <header class="topbar">
+    <!-- MAIN -->
+    <div class="app-main" id="app-main">
+
+      <!-- TOPBAR -->
+      <header class="app-topbar">
         <div class="topbar-left">
-          <h2 id="page-title">Dashboard</h2>
-          <span id="page-subtitle" class="page-subtitle">Welcome back, Rohan 👋</span>
+          <div>
+            <div class="topbar-title" id="page-title">Dashboard</div>
+            <div class="topbar-date" id="page-date"></div>
+          </div>
+        </div>
+        <div class="topbar-center">
+          <div class="topbar-search">
+            <span>🔍</span>
+            <input type="text" placeholder="Search..." id="global-search" />
+            <span class="search-shortcut">⌘K</span>
+          </div>
         </div>
         <div class="topbar-right">
-          <div class="search-box">
-            <span>🔍</span>
-            <input type="text" placeholder="Search trades..." id="global-search" />
+          <button class="topbar-icon-btn" onclick="toggleTheme()">🌙</button>
+          <button class="topbar-add-btn" onclick="openAddTrade()">+</button>
+          <div class="topbar-clock" id="clock"></div>
+          <button class="topbar-icon-btn notif">🔔<span class="notif-dot"></span></button>
+          <div class="topbar-user-avatar" onclick="showView('settings')">RK
+            <span class="topbar-user-badge">🟠</span>
           </div>
-          <button class="btn btn-primary" onclick="openAddTrade()">+ Add Trade</button>
-          <div class="notification-bell">🔔<span class="notif-dot"></span></div>
         </div>
       </header>
 
-      <!-- DASHBOARD VIEW -->
-      <div id="view-dashboard" class="view active">
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-icon green">💰</div>
-            <div class="kpi-info">
-              <span class="kpi-label">Total P&amp;L</span>
-              <span class="kpi-value" id="kpi-pnl">$0.00</span>
-              <span class="kpi-change positive" id="kpi-pnl-change">+0%</span>
-            </div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-icon orange">🎯</div>
-            <div class="kpi-info">
-              <span class="kpi-label">Win Rate</span>
-              <span class="kpi-value" id="kpi-winrate">0%</span>
-              <span class="kpi-change" id="kpi-winrate-change">0 wins / 0 losses</span>
-            </div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-icon blue">⚖️</div>
-            <div class="kpi-info">
-              <span class="kpi-label">Avg Risk:Reward</span>
-              <span class="kpi-value" id="kpi-rr">0:0</span>
-              <span class="kpi-change" id="kpi-rr-change">Based on closed trades</span>
-            </div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-icon purple">📊</div>
-            <div class="kpi-info">
-              <span class="kpi-label">Total Trades</span>
-              <span class="kpi-value" id="kpi-total">0</span>
-              <span class="kpi-change" id="kpi-total-change">0 open positions</span>
-            </div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-icon red">📉</div>
-            <div class="kpi-info">
-              <span class="kpi-label">Max Drawdown</span>
-              <span class="kpi-value" id="kpi-drawdown">0%</span>
-              <span class="kpi-change negative" id="kpi-drawdown-change">Peak to trough</span>
-            </div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-icon yellow">⚡</div>
-            <div class="kpi-info">
-              <span class="kpi-label">Profit Factor</span>
-              <span class="kpi-value" id="kpi-pf">0.00</span>
-              <span class="kpi-change" id="kpi-pf-change">Gross profit / loss</span>
-            </div>
+      <!-- NEWS TICKER -->
+      <div class="news-ticker">
+        <span class="ticker-label">NEWS</span>
+        <div class="ticker-track">
+          <div class="ticker-inner" id="ticker">
+            <span>🇺🇸 S&amp;P 500 &nbsp;5,482.87 &nbsp;<span class="green">+0.54%</span></span>
+            <span>🇺🇸 NASDAQ &nbsp;19,341.92 &nbsp;<span class="green">+0.87%</span></span>
+            <span>🟡 BTC/USD &nbsp;$95,234.00 &nbsp;<span class="red">-1.23%</span></span>
+            <span>🟡 ETH/USD &nbsp;$3,541.20 &nbsp;<span class="red">-0.88%</span></span>
+            <span>💶 EUR/USD &nbsp;1.0821 &nbsp;<span class="green">+0.12%</span></span>
+            <span>💷 GBP/USD &nbsp;1.2704 &nbsp;<span class="green">+0.08%</span></span>
+            <span>🏅 XAU/USD &nbsp;$2,651.40 &nbsp;<span class="green">+0.31%</span></span>
+            <span>📅 Unemployment Rate &nbsp;01:30 PM</span>
+            <span>📅 ADP Employment Change Weekly &nbsp;06:45 PM</span>
+            <span>📅 S&amp;P/Case-Shiller Home Price YoY &nbsp;02:00 PM</span>
           </div>
         </div>
+      </div>
 
-        <div class="dashboard-charts">
-          <div class="chart-card wide">
-            <div class="chart-header">
-              <h3>Equity Curve</h3>
-              <div class="chart-filters">
-                <button class="filter-btn active" onclick="setEquityFilter('all', this)">All</button>
-                <button class="filter-btn" onclick="setEquityFilter('1m', this)">1M</button>
-                <button class="filter-btn" onclick="setEquityFilter('3m', this)">3M</button>
-                <button class="filter-btn" onclick="setEquityFilter('ytd', this)">YTD</button>
+      <!-- VIEWS CONTAINER -->
+      <div class="views-container">
+
+        <!-- ── DASHBOARD ── -->
+        <div id="view-dashboard" class="view active">
+          <div class="kpi-row">
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <div class="kpi-icon-wrap blue"><span>💲</span></div>
+                <span class="kpi-tag">TOTAL</span>
               </div>
+              <div class="kpi-main-val green" id="kpi-pnl">+$0.00</div>
+              <div class="kpi-sub-label">TOTAL P&amp;L</div>
+              <div class="kpi-sub-note" id="kpi-pnl-note">→ 0 trades</div>
             </div>
-            <canvas id="equityChart" height="100"></canvas>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header"><h3>Win/Loss Ratio</h3></div>
-            <canvas id="winLossChart" height="200"></canvas>
-          </div>
-        </div>
-
-        <div class="dashboard-bottom">
-          <div class="card recent-trades-card">
-            <div class="card-header">
-              <h3>Recent Trades</h3>
-              <button class="btn btn-ghost btn-sm" onclick="showView('trades')">View All →</button>
-            </div>
-            <div id="recent-trades-list"></div>
-          </div>
-          <div class="card performance-card">
-            <div class="card-header"><h3>Performance by Symbol</h3></div>
-            <canvas id="symbolChart" height="200"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <!-- TRADES VIEW -->
-      <div id="view-trades" class="view">
-        <div class="trades-toolbar">
-          <div class="trades-filters">
-            <select id="filter-direction" onchange="renderTradesTable()">
-              <option value="all">All Directions</option>
-              <option value="long">Long</option>
-              <option value="short">Short</option>
-            </select>
-            <select id="filter-result" onchange="renderTradesTable()">
-              <option value="all">All Results</option>
-              <option value="win">Win</option>
-              <option value="loss">Loss</option>
-              <option value="breakeven">Breakeven</option>
-            </select>
-            <select id="filter-symbol" onchange="renderTradesTable()">
-              <option value="all">All Symbols</option>
-            </select>
-            <input type="date" id="filter-date-from" onchange="renderTradesTable()" placeholder="From" />
-            <input type="date" id="filter-date-to" onchange="renderTradesTable()" placeholder="To" />
-          </div>
-          <div class="trades-actions">
-            <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
-            <button class="btn btn-primary" onclick="openAddTrade()">+ Add Trade</button>
-          </div>
-        </div>
-
-        <div class="table-container">
-          <table class="trades-table">
-            <thead>
-              <tr>
-                <th onclick="sortTable('date')">Date ↕</th>
-                <th onclick="sortTable('symbol')">Symbol ↕</th>
-                <th onclick="sortTable('direction')">Direction</th>
-                <th onclick="sortTable('entry')">Entry</th>
-                <th onclick="sortTable('exit')">Exit</th>
-                <th onclick="sortTable('size')">Size</th>
-                <th onclick="sortTable('pnl')">P&amp;L ↕</th>
-                <th onclick="sortTable('rr')">R:R</th>
-                <th>Setup</th>
-                <th>Result</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="trades-tbody"></tbody>
-          </table>
-          <div id="trades-empty" class="empty-state" style="display:none;">
-            <div class="empty-icon">📋</div>
-            <h3>No trades yet</h3>
-            <p>Start logging your trades to see them here.</p>
-            <button class="btn btn-primary" onclick="openAddTrade()">+ Add Your First Trade</button>
-          </div>
-        </div>
-        <div class="table-footer">
-          <span id="trades-count">0 trades</span>
-          <div class="pagination" id="pagination"></div>
-        </div>
-      </div>
-
-      <!-- ANALYTICS VIEW -->
-      <div id="view-analytics" class="view">
-        <div class="analytics-grid">
-          <div class="chart-card">
-            <div class="chart-header"><h3>Monthly P&amp;L</h3></div>
-            <canvas id="monthlyPnlChart" height="200"></canvas>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header"><h3>Trade Duration vs P&amp;L</h3></div>
-            <canvas id="durationChart" height="200"></canvas>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header"><h3>Best &amp; Worst Setups</h3></div>
-            <canvas id="setupChart" height="200"></canvas>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header"><h3>Day of Week Performance</h3></div>
-            <canvas id="dowChart" height="200"></canvas>
-          </div>
-          <div class="chart-card wide">
-            <div class="chart-header"><h3>P&amp;L Distribution</h3></div>
-            <canvas id="distributionChart" height="100"></canvas>
-          </div>
-        </div>
-        <div class="analytics-stats">
-          <div class="stat-card">
-            <span class="stat-label">Best Trade</span>
-            <span class="stat-value green" id="best-trade">$0</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Worst Trade</span>
-            <span class="stat-value red" id="worst-trade">$0</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Avg Win</span>
-            <span class="stat-value green" id="avg-win">$0</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Avg Loss</span>
-            <span class="stat-value red" id="avg-loss">$0</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Longest Win Streak</span>
-            <span class="stat-value" id="win-streak">0</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Longest Loss Streak</span>
-            <span class="stat-value red" id="loss-streak">0</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Avg Hold Time</span>
-            <span class="stat-value" id="avg-hold">0 min</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Total Commission</span>
-            <span class="stat-value red" id="total-comm">$0</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- JOURNAL VIEW -->
-      <div id="view-journal" class="view">
-        <div class="journal-layout">
-          <div class="journal-sidebar-panel">
-            <div class="journal-header">
-              <h3>Journal Entries</h3>
-              <button class="btn btn-primary btn-sm" onclick="openAddJournal()">+ New Entry</button>
-            </div>
-            <div id="journal-list" class="journal-list"></div>
-          </div>
-          <div class="journal-main-panel">
-            <div id="journal-editor" class="journal-editor">
-              <div class="journal-empty">
-                <div class="empty-icon">📝</div>
-                <h3>Select or create a journal entry</h3>
-                <p>Reflect on your trades, emotions, and lessons learned.</p>
-                <button class="btn btn-primary" onclick="openAddJournal()">+ New Entry</button>
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <div class="kpi-icon-wrap orange"><span>⏱</span></div>
               </div>
+              <div class="kpi-main-val green" id="kpi-unrealized">+$0.00</div>
+              <div class="kpi-sub-label">UNREALIZED</div>
+              <div class="kpi-sub-note" id="kpi-unrealized-note">0 open positions</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <div class="kpi-icon-wrap green-bg"><span>✓</span></div>
+              </div>
+              <div class="kpi-main-val green" id="kpi-realized">+$0.00</div>
+              <div class="kpi-sub-label">REALIZED</div>
+              <div class="kpi-sub-note" id="kpi-realized-note">0 closed trades</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <div class="kpi-icon-wrap purple-bg"><span>◎</span></div>
+              </div>
+              <div class="kpi-main-val white" id="kpi-winrate">0%</div>
+              <div class="kpi-sub-label">WIN RATE</div>
+              <div class="winrate-bar"><div class="winrate-fill" id="winrate-fill" style="width:0%"></div></div>
+            </div>
+          </div>
+
+          <div class="dashboard-main-row">
+            <div class="dash-card performance-card">
+              <div class="perf-header">
+                <div>
+                  <div class="perf-label">PERFORMANCE</div>
+                  <div class="perf-val" id="perf-val">+$0.00 <span class="perf-badge" id="perf-pct">▲ 0%</span></div>
+                </div>
+                <div class="perf-filters">
+                  <button class="pf-btn" onclick="setEquityFilter('1d',this)">1D</button>
+                  <button class="pf-btn active" onclick="setEquityFilter('1w',this)">1W</button>
+                  <button class="pf-btn" onclick="setEquityFilter('1m',this)">1M</button>
+                  <button class="pf-btn" onclick="setEquityFilter('3m',this)">3M</button>
+                  <button class="pf-btn" onclick="setEquityFilter('all',this)">ALL</button>
+                </div>
+              </div>
+              <canvas id="equityChart" height="90"></canvas>
+            </div>
+            <div class="dash-card monthly-pnl-card">
+              <div class="mpc-header">Monthly P&amp;L <span id="cal-month-label"></span></div>
+              <div class="mpc-nav">
+                <button onclick="changeCalMonth(-1)">‹</button>
+                <button onclick="changeCalMonth(1)">›</button>
+              </div>
+              <div class="mini-cal-grid" id="mini-cal"></div>
+              <div class="mini-cal-legend"><span class="dot-profit"></span>Profit <span class="dot-loss"></span>Loss</div>
+            </div>
+          </div>
+
+          <div class="dashboard-bottom-row">
+            <div class="dash-card open-positions-card">
+              <div class="op-header">
+                <span>Open Positions</span>
+                <span class="live-badge">● LIVE</span>
+                <span class="op-total" id="op-total">Total: $0.00</span>
+              </div>
+              <table class="op-table">
+                <thead>
+                  <tr><th></th><th>Symbol</th><th>Dir</th><th>Entry</th><th>Size</th><th>P&amp;L</th></tr>
+                </thead>
+                <tbody id="open-pos-tbody"></tbody>
+              </table>
+              <div id="open-pos-empty" class="op-empty">No open positions</div>
+            </div>
+            <div class="dash-card top-performers-card">
+              <div class="tp-header">Top Performers</div>
+              <div id="top-performers"></div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- CALENDAR VIEW -->
-      <div id="view-calendar" class="view">
-        <div class="calendar-container">
-          <div class="calendar-header">
-            <button class="btn btn-ghost" onclick="changeMonth(-1)">← Prev</button>
-            <h3 id="calendar-title">June 2024</h3>
-            <button class="btn btn-ghost" onclick="changeMonth(1)">Next →</button>
-          </div>
-          <div class="calendar-grid" id="calendar-grid">
-            <div class="cal-day-header">Sun</div>
-            <div class="cal-day-header">Mon</div>
-            <div class="cal-day-header">Tue</div>
-            <div class="cal-day-header">Wed</div>
-            <div class="cal-day-header">Thu</div>
-            <div class="cal-day-header">Fri</div>
-            <div class="cal-day-header">Sat</div>
-          </div>
-          <div class="calendar-legend">
-            <span class="legend-item win">Profitable Day</span>
-            <span class="legend-item loss">Loss Day</span>
-            <span class="legend-item neutral">No Trades</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- SETTINGS VIEW -->
-      <div id="view-settings" class="view">
-        <div class="settings-layout">
-          <div class="settings-section">
-            <h3>Account Settings</h3>
-            <div class="settings-group">
-              <label>Display Name</label>
-              <input type="text" class="settings-input" value="Rohan Kelkar" />
-            </div>
-            <div class="settings-group">
-              <label>Email</label>
-              <input type="email" class="settings-input" value="rohankelkar0555@gmail.com" />
-            </div>
-            <div class="settings-group">
-              <label>Starting Capital</label>
-              <input type="number" class="settings-input" value="10000" id="starting-capital" onchange="saveSettings()" />
-            </div>
-            <div class="settings-group">
-              <label>Currency</label>
-              <select class="settings-input">
-                <option>USD ($)</option>
-                <option>EUR (€)</option>
-                <option>GBP (£)</option>
-                <option>INR (₹)</option>
+        <!-- ── TRADES ── -->
+        <div id="view-trades" class="view">
+          <div class="trades-toolbar">
+            <div class="trades-filters">
+              <select id="f-direction" onchange="renderTrades()">
+                <option value="all">All Directions</option>
+                <option value="long">Long</option>
+                <option value="short">Short</option>
               </select>
+              <select id="f-result" onchange="renderTrades()">
+                <option value="all">All Results</option>
+                <option value="win">Winner</option>
+                <option value="loss">Loser</option>
+                <option value="breakeven">Breakeven</option>
+              </select>
+              <select id="f-symbol" onchange="renderTrades()">
+                <option value="all">All Symbols</option>
+              </select>
+              <input type="date" id="f-from" onchange="renderTrades()" />
+              <input type="date" id="f-to"   onchange="renderTrades()" />
             </div>
-            <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
-          </div>
-
-          <div class="settings-section">
-            <h3>Risk Management</h3>
-            <div class="settings-group">
-              <label>Max Risk Per Trade (%)</label>
-              <input type="number" class="settings-input" value="2" id="max-risk" />
-            </div>
-            <div class="settings-group">
-              <label>Daily Loss Limit ($)</label>
-              <input type="number" class="settings-input" value="500" id="daily-loss" />
-            </div>
-            <div class="settings-group">
-              <label>Default R:R Target</label>
-              <input type="number" class="settings-input" value="2" step="0.1" id="rr-target" />
-            </div>
-            <button class="btn btn-primary">Save Risk Settings</button>
-          </div>
-
-          <div class="settings-section danger-zone">
-            <h3>Data Management</h3>
-            <div class="settings-actions">
-              <button class="btn btn-outline" onclick="exportCSV()">⬇ Export All Data (CSV)</button>
-              <button class="btn btn-outline" onclick="loadSampleData()">🔄 Load Sample Data</button>
-              <button class="btn btn-danger" onclick="clearAllData()">🗑 Clear All Data</button>
+            <div class="trades-actions">
+              <button class="tb-btn" onclick="exportCSV()">⬇ Export</button>
+              <button class="tb-btn primary" onclick="openAddTrade()">+ Add Trade</button>
             </div>
           </div>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <!-- ADD TRADE MODAL -->
-  <div id="trade-modal" class="modal-overlay" onclick="closeModalOnBackdrop(event)">
-    <div class="modal">
-      <div class="modal-header">
-        <h3 id="modal-title">Add Trade</h3>
-        <button class="modal-close" onclick="closeModal()">✕</button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="trade-id" />
-        <div class="form-row">
-          <div class="form-group">
-            <label>Symbol *</label>
-            <input type="text" id="trade-symbol" placeholder="e.g. AAPL, BTC/USD" class="form-input" style="text-transform:uppercase" />
+          <div class="trades-table-wrap">
+            <table class="trades-table">
+              <thead>
+                <tr>
+                  <th onclick="sortBy('date')">Date ↕</th>
+                  <th onclick="sortBy('symbol')">Symbol</th>
+                  <th>Direction</th>
+                  <th onclick="sortBy('entry')">Entry</th>
+                  <th>Exit</th>
+                  <th>Size</th>
+                  <th onclick="sortBy('pnl')">P&amp;L ↕</th>
+                  <th>R:R</th>
+                  <th>Setup</th>
+                  <th>Result</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="trades-tbody"></tbody>
+            </table>
+            <div id="trades-empty" class="tbl-empty" style="display:none">
+              <span>📋</span>
+              <h3>No trades found</h3>
+              <p>Add your first trade or adjust the filters.</p>
+              <button class="tb-btn primary" onclick="openAddTrade()">+ Add Trade</button>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Date *</label>
-            <input type="date" id="trade-date" class="form-input" />
-          </div>
-          <div class="form-group">
-            <label>Direction *</label>
-            <select id="trade-direction" class="form-input">
-              <option value="long">Long</option>
-              <option value="short">Short</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Entry Price *</label>
-            <input type="number" id="trade-entry" placeholder="0.00" step="0.01" class="form-input" oninput="calcPnL()" />
-          </div>
-          <div class="form-group">
-            <label>Exit Price</label>
-            <input type="number" id="trade-exit" placeholder="0.00" step="0.01" class="form-input" oninput="calcPnL()" />
-          </div>
-          <div class="form-group">
-            <label>Position Size *</label>
-            <input type="number" id="trade-size" placeholder="0" step="0.01" class="form-input" oninput="calcPnL()" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Stop Loss</label>
-            <input type="number" id="trade-sl" placeholder="0.00" step="0.01" class="form-input" oninput="calcPnL()" />
-          </div>
-          <div class="form-group">
-            <label>Take Profit</label>
-            <input type="number" id="trade-tp" placeholder="0.00" step="0.01" class="form-input" />
-          </div>
-          <div class="form-group">
-            <label>Commission ($)</label>
-            <input type="number" id="trade-commission" placeholder="0.00" step="0.01" class="form-input" value="0" oninput="calcPnL()" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Setup / Strategy</label>
-            <select id="trade-setup" class="form-input">
-              <option value="">Select setup...</option>
-              <option>Breakout</option>
-              <option>Pullback</option>
-              <option>Reversal</option>
-              <option>Scalp</option>
-              <option>Swing</option>
-              <option>Gap Fill</option>
-              <option>VWAP</option>
-              <option>Support/Resistance</option>
-              <option>Custom</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Timeframe</label>
-            <select id="trade-timeframe" class="form-input">
-              <option>1m</option>
-              <option>5m</option>
-              <option>15m</option>
-              <option selected>1h</option>
-              <option>4h</option>
-              <option>1D</option>
-              <option>1W</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Emotion</label>
-            <select id="trade-emotion" class="form-input">
-              <option value="">Select...</option>
-              <option>😊 Confident</option>
-              <option>😰 Nervous</option>
-              <option>😤 Frustrated</option>
-              <option>😎 Calm</option>
-              <option>🤔 Uncertain</option>
-              <option>😃 Excited</option>
-              <option>😞 Discouraged</option>
-            </select>
+          <div class="tbl-footer">
+            <span id="trades-count">0 trades</span>
+            <div id="pagination" class="pagination"></div>
           </div>
         </div>
 
-        <!-- Live P&L Preview -->
-        <div class="pnl-preview" id="pnl-preview">
-          <div class="pnl-preview-item">
-            <span>Calculated P&amp;L:</span>
-            <strong id="preview-pnl" class="green">$0.00</strong>
-          </div>
-          <div class="pnl-preview-item">
-            <span>Risk Amount:</span>
-            <strong id="preview-risk">$0.00</strong>
-          </div>
-          <div class="pnl-preview-item">
-            <span>R:R Ratio:</span>
-            <strong id="preview-rr">0:0</strong>
+        <!-- ── JOURNAL ── -->
+        <div id="view-journal" class="view">
+          <div class="journal-layout">
+            <div class="journal-left">
+              <div class="journal-left-header">
+                <span>Trade Journal</span>
+                <button class="tb-btn primary sm" onclick="openAddJournal()">+ New</button>
+              </div>
+              <div class="journal-tabs"><span class="active">All</span><span>Journaled</span><span>Pending</span></div>
+              <div id="journal-list-panel"></div>
+            </div>
+            <div class="journal-right" id="journal-right">
+              <div class="journal-placeholder">
+                <span>📖</span>
+                <h3>Select a trade to journal</h3>
+                <p>Choose a trade from the left panel or create a new journal entry.</p>
+                <button class="tb-btn primary" onclick="openAddJournal()">+ New Journal Entry</button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="form-group full-width">
-          <label>Trade Notes</label>
-          <textarea id="trade-notes" class="form-input" rows="3" placeholder="Entry rationale, observations, mistakes, lessons learned..."></textarea>
+        <!-- ── PERFORMANCE ANALYSIS ── -->
+        <div id="view-performance" class="view">
+          <div class="analysis-header">
+            <h2>Performance Analytics</h2>
+            <p>Analyze your trading patterns and improve your strategy</p>
+          </div>
+          <div class="an-filters">
+            <span>TIME PERIOD:</span>
+            <button class="an-filter-btn" onclick="setAnFilter('today',this)">Today</button>
+            <button class="an-filter-btn" onclick="setAnFilter('7d',this)">7 Days</button>
+            <button class="an-filter-btn" onclick="setAnFilter('30d',this)">30 Days</button>
+            <button class="an-filter-btn" onclick="setAnFilter('3m',this)">3 Months</button>
+            <button class="an-filter-btn" onclick="setAnFilter('1y',this)">1 Year</button>
+            <button class="an-filter-btn active" onclick="setAnFilter('all',this)">All Time</button>
+          </div>
+          <div class="an-kpi-row">
+            <div class="an-kpi"><div class="an-kpi-icon blue">💲</div><div><div class="an-kpi-val" id="an-pnl">$0</div><div class="an-kpi-label">TOTAL P&L</div><div class="an-kpi-sub">From 0 closed trades</div></div></div>
+            <div class="an-kpi"><div class="an-kpi-icon purple">◎</div><div><div class="an-kpi-val" id="an-wr">0%</div><div class="an-kpi-label">WIN RATE</div><div class="an-kpi-sub">Percentage of winning trades</div></div></div>
+            <div class="an-kpi"><div class="an-kpi-icon orange">📈</div><div><div class="an-kpi-val" id="an-pf">0.00</div><div class="an-kpi-label">PROFIT FACTOR</div><div class="an-kpi-sub">Gross profit ÷ gross loss</div></div></div>
+            <div class="an-kpi"><div class="an-kpi-icon green-bg">$</div><div><div class="an-kpi-val" id="an-exp">$0</div><div class="an-kpi-label">EXPECTANCY</div><div class="an-kpi-sub">Average win per trade</div></div></div>
+          </div>
+          <div class="an-main-row">
+            <div class="an-card">
+              <h4>Quick Stats</h4>
+              <div class="qs-grid" id="qs-grid"></div>
+            </div>
+            <div class="an-card wide">
+              <h4>Equity Curve</h4>
+              <canvas id="an-equity" height="100"></canvas>
+            </div>
+          </div>
+          <div class="an-charts-row">
+            <div class="an-card"><h4>Long vs Short</h4><canvas id="an-ls" height="150"></canvas></div>
+            <div class="an-card"><h4>Day Performance</h4><canvas id="an-dow" height="150"></canvas></div>
+            <div class="an-card"><h4>Top Symbols</h4><canvas id="an-sym" height="150"></canvas></div>
+          </div>
+          <div class="an-charts-row">
+            <div class="an-card wide"><h4>Monthly P&amp;L</h4><canvas id="an-monthly" height="120"></canvas></div>
+            <div class="an-card"><h4>P&amp;L Distribution</h4><canvas id="an-dist" height="150"></canvas></div>
+          </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveTrade()">Save Trade</button>
-      </div>
+
+        <!-- ── TRADE ANALYSIS ── -->
+        <div id="view-trade-analysis" class="view">
+          <div class="analysis-header"><h2>Trade Analysis</h2><p>Deep dive into individual trade performance</p></div>
+          <div class="an-card" style="margin-bottom:16px">
+            <h4>Setup Performance</h4>
+            <canvas id="an-setup" height="120"></canvas>
+          </div>
+          <div class="an-charts-row">
+            <div class="an-card"><h4>Win/Loss Ratio</h4><canvas id="an-wl" height="150"></canvas></div>
+            <div class="an-card"><h4>Session Performance</h4><canvas id="an-session" height="150"></canvas></div>
+            <div class="an-card"><h4>Risk/Reward Analysis</h4><canvas id="an-rr" height="150"></canvas></div>
+          </div>
+        </div>
+
+        <!-- ── MARKET ── -->
+        <div id="view-market" class="view">
+          <div class="market-grid">
+            <div class="market-card"><div class="market-sym">EUR/USD</div><div class="market-price">1.0821</div><div class="market-chg green">+0.12%</div></div>
+            <div class="market-card"><div class="market-sym">GBP/USD</div><div class="market-price">1.2704</div><div class="market-chg green">+0.08%</div></div>
+            <div class="market-card"><div class="market-sym">USD/JPY</div><div class="market-price">148.23</div><div class="market-chg red">-0.22%</div></div>
+            <div class="market-card"><div class="market-sym">XAU/USD</div><div class="market-price">$2,651.40</div><div class="market-chg green">+0.31%</div></div>
+            <div class="market-card"><div class="market-sym">BTC/USD</div><div class="market-price">$95,234</div><div class="market-chg red">-1.23%</div></div>
+            <div class="market-card"><div class="market-sym">ETH/USD</div><div class="market-price">$3,541</div><div class="market-chg red">-0.88%</div></div>
+            <div class="market-card"><div class="market-sym">S&P 500</div><div class="market-price">5,482</div><div class="market-chg green">+0.54%</div></div>
+            <div class="market-card"><div class="market-sym">NASDAQ</div><div class="market-price">19,341</div><div class="market-chg green">+0.87%</div></div>
+          </div>
+        </div>
+
+        <!-- ── COMMUNITY VIEWS ── -->
+        <div id="view-lounge" class="view"><div class="placeholder-view"><span>💬</span><h3>Traders Lounge</h3><p>Community chat coming soon.</p></div></div>
+        <div id="view-rooms" class="view"><div class="placeholder-view"><span>🏠</span><h3>Trade Rooms</h3><p>Live trading rooms — coming soon.</p><span class="badge-soon">SOON</span></div></div>
+        <div id="view-friends" class="view"><div class="placeholder-view"><span>👥</span><h3>Friends</h3><p>Follow and compare with other traders.</p></div></div>
+        <div id="view-leaderboard" class="view">
+          <div class="leaderboard-wrap">
+            <h2>Leaderboard</h2>
+            <table class="lb-table">
+              <thead><tr><th>#</th><th>Trader</th><th>P&L</th><th>Win Rate</th><th>Trades</th></tr></thead>
+              <tbody id="lb-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="view-coming-soon" class="view"><div class="placeholder-view"><span>✨</span><h3>Coming Soon</h3><p>New features are on the way. Stay tuned!</p></div></div>
+
+        <!-- ── SETTINGS ── -->
+        <div id="view-settings" class="view">
+          <div class="settings-wrap">
+            <div class="settings-section">
+              <h3>Account</h3>
+              <div class="sett-row"><label>Display Name</label><input class="sett-input" type="text" value="Rohan Kelkar" /></div>
+              <div class="sett-row"><label>Email</label><input class="sett-input" type="email" value="rohankelkar0555@gmail.com" /></div>
+              <div class="sett-row"><label>Starting Capital ($)</label><input class="sett-input" type="number" value="10000" id="s-capital" onchange="saveSettings()" /></div>
+              <div class="sett-row"><label>Currency</label><select class="sett-input"><option>USD ($)</option><option>EUR (€)</option><option>GBP (£)</option><option>INR (₹)</option></select></div>
+              <button class="tb-btn primary" onclick="saveSettings()">Save Changes</button>
+            </div>
+            <div class="settings-section">
+              <h3>Risk Management</h3>
+              <div class="sett-row"><label>Max Risk Per Trade (%)</label><input class="sett-input" type="number" value="2" step="0.1" id="s-risk" /></div>
+              <div class="sett-row"><label>Daily Loss Limit ($)</label><input class="sett-input" type="number" value="500" id="s-daily" /></div>
+              <div class="sett-row"><label>Default R:R Target</label><input class="sett-input" type="number" value="2" step="0.1" id="s-rr" /></div>
+              <button class="tb-btn primary">Save Risk Settings</button>
+            </div>
+            <div class="settings-section danger">
+              <h3>Data</h3>
+              <div class="sett-actions">
+                <button class="tb-btn" onclick="exportCSV()">⬇ Export CSV</button>
+                <button class="tb-btn" onclick="loadSampleData()">🔄 Sample Data</button>
+                <button class="tb-btn danger" onclick="clearAll()">🗑 Clear All Data</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /views-container -->
+    </div><!-- /app-main -->
+  </div><!-- /app-layout -->
+</div><!-- /app-page -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     ADD TRADE MODAL
+══════════════════════════════════════════════════════════════ -->
+<div id="trade-modal" class="modal-overlay" onclick="backdropClose(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Add Trade</h3>
+      <button class="modal-x" onclick="closeTradeModal()">✕</button>
     </div>
-  </div>
-
-  <!-- JOURNAL MODAL -->
-  <div id="journal-modal" class="modal-overlay" onclick="closeModalOnBackdrop(event)">
-    <div class="modal modal-lg">
-      <div class="modal-header">
-        <h3 id="journal-modal-title">New Journal Entry</h3>
-        <button class="modal-close" onclick="closeJournalModal()">✕</button>
+    <div class="modal-body">
+      <input type="hidden" id="t-id" />
+      <div class="form-row">
+        <div class="fg"><label>Symbol *</label><input class="fi" id="t-symbol" type="text" placeholder="XAUUSD" style="text-transform:uppercase" /></div>
+        <div class="fg"><label>Date *</label><input class="fi" id="t-date" type="date" /></div>
+        <div class="fg"><label>Direction *</label><select class="fi" id="t-dir"><option value="long">Long</option><option value="short">Short</option></select></div>
       </div>
-      <div class="modal-body">
-        <input type="hidden" id="journal-id" />
-        <div class="form-row">
-          <div class="form-group">
-            <label>Date</label>
-            <input type="date" id="journal-date" class="form-input" />
-          </div>
-          <div class="form-group">
-            <label>Title</label>
-            <input type="text" id="journal-title-input" class="form-input" placeholder="e.g. 'Great morning session'" />
-          </div>
-          <div class="form-group">
-            <label>Overall Mood</label>
-            <select id="journal-mood" class="form-input">
-              <option>😊 Great</option>
-              <option>😐 Okay</option>
-              <option>😞 Poor</option>
-              <option>😤 Frustrated</option>
-              <option>🎯 Focused</option>
-            </select>
-          </div>
+      <div class="form-row">
+        <div class="fg"><label>Entry Price *</label><input class="fi" id="t-entry" type="number" step="0.01" placeholder="0.00" oninput="calcPreview()" /></div>
+        <div class="fg"><label>Exit Price</label><input class="fi" id="t-exit" type="number" step="0.01" placeholder="0.00" oninput="calcPreview()" /></div>
+        <div class="fg"><label>Size *</label><input class="fi" id="t-size" type="number" step="0.01" placeholder="0.01" oninput="calcPreview()" /></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>Stop Loss</label><input class="fi" id="t-sl" type="number" step="0.01" placeholder="0.00" oninput="calcPreview()" /></div>
+        <div class="fg"><label>Take Profit</label><input class="fi" id="t-tp" type="number" step="0.01" placeholder="0.00" /></div>
+        <div class="fg"><label>Commission ($)</label><input class="fi" id="t-comm" type="number" step="0.01" value="0" oninput="calcPreview()" /></div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>Setup</label>
+          <select class="fi" id="t-setup">
+            <option value="">Select...</option>
+            <option>Breakout</option><option>Pullback</option><option>Reversal</option>
+            <option>VWAP</option><option>Support/Resistance</option><option>Gap Fill</option><option>Scalp</option><option>Swing</option>
+          </select>
         </div>
-        <div class="form-group full-width">
-          <label>Pre-Market Plan</label>
-          <textarea id="journal-plan" class="form-input" rows="3" placeholder="What's your plan for today? Key levels, news events, targets..."></textarea>
+        <div class="fg"><label>Timeframe</label>
+          <select class="fi" id="t-tf">
+            <option>1m</option><option>5m</option><option>15m</option><option selected>1h</option><option>4h</option><option>1D</option>
+          </select>
         </div>
-        <div class="form-group full-width">
-          <label>Trade Notes &amp; Reflections</label>
-          <textarea id="journal-notes" class="form-input" rows="5" placeholder="How did the session go? What went well? What to improve?"></textarea>
+        <div class="fg"><label>Emotion</label>
+          <select class="fi" id="t-emo">
+            <option value="">Select...</option>
+            <option>😊 Confident</option><option>😎 Calm</option><option>😰 Nervous</option>
+            <option>😤 Frustrated</option><option>🤔 Uncertain</option><option>😃 Excited</option>
+          </select>
         </div>
-        <div class="form-group full-width">
+      </div>
+      <div class="pnl-preview-bar" id="pnl-preview">
+        <div class="ppb-item"><span>P&L</span><strong id="pp-pnl">$0.00</strong></div>
+        <div class="ppb-item"><span>Risk</span><strong id="pp-risk">$0.00</strong></div>
+        <div class="ppb-item"><span>R:R</span><strong id="pp-rr">—</strong></div>
+        <div class="ppb-item"><span>Result</span><strong id="pp-result">—</strong></div>
+      </div>
+      <div class="fg full">
+        <label>Pre-Trade Analysis</label>
+        <textarea class="fi" id="t-pre" rows="2" placeholder="What did you see? Plan, thesis, levels, risk..."></textarea>
+      </div>
+      <div class="fg full">
+        <label>Post-Trade Review / Notes</label>
+        <textarea class="fi" id="t-notes" rows="3" placeholder="What happened? Execution, slippage, improvements..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="fg full">
           <label>Lessons Learned</label>
-          <textarea id="journal-lessons" class="form-input" rows="3" placeholder="Key takeaways from today's trading..."></textarea>
+          <textarea class="fi" id="t-lessons" rows="2" placeholder="Key takeaways to repeat or avoid..."></textarea>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="closeJournalModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveJournal()">Save Entry</button>
-      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="tb-btn" onclick="closeTradeModal()">Cancel</button>
+      <button class="tb-btn primary" onclick="saveTrade()">Save Trade</button>
     </div>
   </div>
+</div>
 
-  <!-- TOAST NOTIFICATION -->
-  <div id="toast" class="toast"></div>
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
 
-  <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
