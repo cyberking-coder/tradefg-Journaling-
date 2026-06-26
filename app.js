@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderJournalPanel();
   renderLeaderboard();
   initGlow();
-  mt5Restore();
+  mt5RestoreOnLoad();
   restoreAIKey();
   document.getElementById('global-search').addEventListener('input', () => { if (document.getElementById('view-trades').classList.contains('active')) renderTrades(); });
 });
@@ -85,6 +85,7 @@ function showView(v) {
     performance:   ['Performance Analytics', 'Analyze your trading patterns'],
     'trade-analysis': ['Trade Analysis', 'Deep dive into individual trades'],
     'ai-analysis': ['AI Analysis',       'Claude-powered performance review'],
+    mt5:           ['MT5 Account',       'Connect & sync your MetaTrader 5 account'],
     market:        ['Market',            'Live market overview'],
     lounge:        ['Traders Lounge',    'Community discussion'],
     rooms:         ['Trade Rooms',       'Coming soon'],
@@ -102,6 +103,10 @@ function showView(v) {
   if (v === 'performance') { updateAnalytics(); setTimeout(drawAnalyticsCharts, 80); }
   if (v === 'trade-analysis') setTimeout(drawTradeAnalysisCharts, 80);
   if (v === 'ai-analysis') restoreAIKey();
+  if (v === 'mt5') {
+    if (S.mt5.connected) { showMt5Panel('dash'); setTimeout(mt5RenderDash, 60); }
+    else showMt5Panel('form');
+  }
   if (v === 'leaderboard') renderLeaderboard();
 }
 
@@ -1107,41 +1112,28 @@ function initGlow() {
 }
 
 /* =================================================================
-   MT5 REAL-TIME ACCOUNT SYNC (investor password, read-only)
+   MT5 ACCOUNT CONNECTION + LIVE DASHBOARD (investor password, read-only)
 ================================================================= */
-S.mt5 = { connected: false, timer: null, account: null, positions: [] };
+S.mt5 = { connected: false, timer: null, syncTimer: null, account: null, positions: [], history: [], cfg: null, lastSync: 0 };
 
 const MT5_BASE = { XAUUSD: 2650, EURUSD: 1.085, GBPUSD: 1.27, BTCUSD: 95000, USDJPY: 148.2, ETHUSD: 3500 };
 const MT5_MULT = { XAUUSD: 1, EURUSD: 1000, GBPUSD: 1000, BTCUSD: 0.2, USDJPY: 90, ETHUSD: 2 };
 
 function val(id) { const e = document.getElementById(id); return e ? e.value : ''; }
-function mt5SaveCfg() {
-  localStorage.setItem('tfg_mt5', JSON.stringify({
-    login: val('mt5-login'), pass: val('mt5-pass'), server: val('mt5-server'),
-    bridge: val('mt5-bridge'), interval: val('mt5-interval'),
-  }));
+function setText2(id, txt) { const e = document.getElementById(id); if (e) e.textContent = txt; }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function timeAgo(ts) {
+  if (!ts) return 'just now';
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 5) return 'just now';
+  if (s < 60) return s + 's ago';
+  const m = Math.floor(s / 60);
+  return m + 'm ago';
 }
-function mt5Restore() {
-  const m = JSON.parse(localStorage.getItem('tfg_mt5') || 'null');
-  if (!m) return;
-  ['login', 'pass', 'server', 'bridge', 'interval'].forEach(k => {
-    const e = document.getElementById('mt5-' + k); if (e && m[k] != null) e.value = m[k];
-  });
-}
-function mt5Status(text, cls) {
-  const el = document.getElementById('mt5-status');
-  if (el) { el.textContent = text; el.className = 'mt5-status' + (cls ? ' ' + cls : ''); }
-}
-function mt5Round(v, sym) {
-  return parseFloat(v.toFixed(MT5_BASE[sym] > 100 ? 2 : 4));
-}
+function mt5Round(v, sym) { return parseFloat(v.toFixed(MT5_BASE[sym] > 100 ? 2 : 4)); }
 function posPnl(p) {
   const diff = p.direction === 'long' ? p.price - p.entry : p.entry - p.price;
   return round2(diff * p.size * p.mult);
-}
-function mt5Seed() {
-  const syms = Object.keys(MT5_BASE);
-  S.mt5.positions = Array.from({ length: 4 }, (_, i) => mt5NewPos(syms, i));
 }
 function mt5NewPos(syms, i) {
   const sym = syms[Math.floor(Math.random() * syms.length)];
@@ -1154,123 +1146,326 @@ function mt5NewPos(syms, i) {
     mult: MT5_MULT[sym],
   };
 }
-async function mt5Connect() {
-  const login = val('mt5-login').trim();
-  const bridge = val('mt5-bridge').trim();
-  const interval = Math.max(2, parseInt(val('mt5-interval')) || 5);
-  if (!login) { showToast('Enter your MT5 login number', 'error'); return; }
-  mt5Status('● Connecting…', 'warn');
-  mt5SaveCfg();
-  let ok = false;
-  if (bridge) {
-    try {
-      const data = await mt5Bridge(bridge, login, val('mt5-pass'), val('mt5-server'));
-      mt5ApplyBridge(data, login);
-      ok = true;
-    } catch (e) {
-      showToast('Bridge unreachable — using live demo data', 'info');
+function mt5SeedPositions() {
+  const syms = Object.keys(MT5_BASE);
+  S.mt5.positions = Array.from({ length: 4 }, (_, i) => mt5NewPos(syms, i));
+}
+// Build a realistic 30-day closed-deal history for the demo dashboard
+function mt5SeedHistory() {
+  const syms = Object.keys(MT5_BASE);
+  const out = [];
+  const now = Date.now();
+  for (let d = 29; d >= 0; d--) {
+    const day = new Date(now - d * 864e5);
+    if (day.getDay() === 0 || day.getDay() === 6) continue;
+    const n = Math.floor(Math.random() * 3) + 1;
+    for (let k = 0; k < n; k++) {
+      const sym = syms[Math.floor(Math.random() * syms.length)];
+      const dir = Math.random() > 0.5 ? 'buy' : 'sell';
+      const entry = MT5_BASE[sym] * (1 + (Math.random() - 0.5) * 0.01);
+      const win = Math.random() > 0.42;
+      const move = (0.002 + Math.random() * 0.02) * (win ? 1 : -1) * (dir === 'buy' ? 1 : -1);
+      const exit = entry * (1 + move);
+      const vol = (sym === 'BTCUSD' || sym === 'ETHUSD') ? +(0.05 + Math.random() * 0.3).toFixed(2) : Math.ceil(1 + Math.random() * 5);
+      const raw = (dir === 'buy' ? exit - entry : entry - exit) * vol * MT5_MULT[sym];
+      const commission = -round2(Math.random() * 2);
+      const swap = -round2(Math.random());
+      const profit = round2(raw + commission + swap);
+      const t = new Date(day);
+      t.setHours(2 + Math.floor(Math.random() * 20), Math.floor(Math.random() * 60));
+      out.push({
+        ticket: Math.floor(Math.random() * 1e8), symbol: sym, type: dir, volume: vol,
+        price_open: mt5Round(entry, sym), price_close: mt5Round(exit, sym),
+        profit, commission, swap, time_close: t.getTime(),
+      });
     }
   }
-  if (!ok) {
-    S.mt5.account = { balance: S.settings.startingCapital || 10000, login, server: val('mt5-server') || 'MetaQuotes-Demo' };
-    mt5Seed();
-  }
-  S.mt5.connected = true;
-  mt5Status('● Connected', 'ok');
-  const acc = document.getElementById('mt5-account'); if (acc) acc.style.display = '';
-  mt5Tick();
-  clearInterval(S.mt5.timer);
-  S.mt5.timer = setInterval(mt5Tick, interval * 1000);
-  showToast('MT5 synced — positions streaming live', 'success');
+  return out.sort((a, b) => a.time_close - b.time_close);
 }
-function mt5Disconnect() {
-  clearInterval(S.mt5.timer);
-  S.mt5.connected = false;
-  S.mt5.positions = [];
-  S.trades = S.trades.filter(t => !(t.source === 'mt5' && !t.exit));
-  mt5Status('● Disconnected', '');
-  const acc = document.getElementById('mt5-account'); if (acc) acc.style.display = 'none';
-  renderDashboard();
-  showToast('MT5 disconnected', 'info');
+function mt5Metrics(h) {
+  const wins = h.filter(d => d.profit > 0), losses = h.filter(d => d.profit < 0);
+  const gp = wins.reduce((s, d) => s + d.profit, 0);
+  const gl = Math.abs(losses.reduce((s, d) => s + d.profit, 0));
+  return {
+    total: round2(h.reduce((s, d) => s + d.profit, 0)),
+    winRate: h.length ? (wins.length / h.length) * 100 : 0,
+    pf: gl > 0 ? gp / gl : (gp > 0 ? Infinity : 0),
+    trades: h.length, wins: wins.length, losses: losses.length,
+  };
 }
-async function mt5Bridge(url, login, password, server) {
+function mapBridgeDeal(d) {
+  if (!d || !d.symbol) return null;
+  const type = (d.type || d.direction || 'buy').toString().toLowerCase().includes('sell') ? 'sell' : 'buy';
+  const tc = d.time_close || d.timeClose || d.time || Date.now();
+  return {
+    ticket: d.ticket || Math.floor(Math.random() * 1e8), symbol: d.symbol, type,
+    volume: +d.volume || +d.size || 0.01,
+    price_open: +d.price_open || +d.entry || 0, price_close: +d.price_close || +d.exit || 0,
+    profit: round2(+d.profit || 0), commission: round2(+d.commission || 0), swap: round2(+d.swap || 0),
+    time_close: typeof tc === 'string' ? new Date(tc).getTime() : tc,
+  };
+}
+async function mt5Bridge(base, account, password, server) {
+  const url = base.replace(/\/$/, '') + '/api/mt5/connect';
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ login, password, server, readOnly: true }),
+    body: JSON.stringify({ account, password, server, readOnly: true }),
   });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
-// Map a real bridge response { account, positions, deals } into our state
-function mt5ApplyBridge(data, login) {
-  S.mt5.account = data.account || { balance: 10000, login };
-  S.mt5.positions = (data.positions || []).map(p => ({
-    id: 'mt5-' + (p.ticket || Math.random().toString(36).slice(2)),
-    symbol: p.symbol, direction: (p.type || p.direction || 'long').toLowerCase().includes('sell') ? 'short' : (p.direction || 'long'),
-    entry: +p.entry || +p.openPrice || 0, price: +p.price || +p.currentPrice || +p.entry || 0,
-    size: +p.size || +p.volume || 0.01, mult: MT5_MULT[p.symbol] || 1, livePnl: p.profit,
-  }));
-  (data.deals || []).forEach(d => {
-    const id = 'mt5-deal-' + (d.ticket || Math.random());
-    if (S.trades.some(t => t.id === id)) return;
-    const pnl = round2(+d.profit || 0);
-    S.trades.push({
-      id, date: (d.time || new Date().toISOString()).split('T')[0], symbol: d.symbol,
-      direction: (d.type || 'buy').toLowerCase().includes('sell') ? 'short' : 'long',
-      entry: +d.entry || +d.price || 0, exit: +d.exit || +d.price || 0, size: +d.volume || +d.size || 0.01,
-      pnl, rr: 0, setup: 'MT5', timeframe: '', result: pnl > 0 ? 'win' : pnl < 0 ? 'loss' : 'breakeven', source: 'mt5',
-    });
-  });
-  save();
-}
-function mt5Tick() {
-  if (!S.mt5.connected) return;
-  S.mt5.positions.forEach(p => { p.price = p.price * (1 + (Math.random() - 0.5) * 0.004); });
-  // occasionally close a position into the trade history
-  if (Math.random() < 0.18 && S.mt5.positions.length > 1) {
-    const idx = Math.floor(Math.random() * S.mt5.positions.length);
-    const p = S.mt5.positions.splice(idx, 1)[0];
-    const pnl = posPnl(p);
-    S.trades.push({
-      id: p.id + '-c', date: new Date().toISOString().split('T')[0], symbol: p.symbol,
-      direction: p.direction, entry: p.entry, exit: mt5Round(p.price, p.symbol), size: p.size,
-      pnl, rr: 0, setup: 'MT5', timeframe: '', result: pnl > 2 ? 'win' : pnl < -2 ? 'loss' : 'breakeven', source: 'mt5',
-    });
-    S.mt5.positions.push(mt5NewPos(Object.keys(MT5_BASE), Date.now() % 9));
-    save();
-    renderMiniCal();
+
+// Single source of truth — activate a connection (demo or real bridge data)
+function mt5Activate(cfg, bridgeData) {
+  clearInterval(S.mt5.timer); clearInterval(S.mt5.syncTimer);
+  if (bridgeData && bridgeData.account) {
+    const ai = bridgeData.account;
+    S.mt5.account = {
+      number: cfg.account, server: ai.server || cfg.server, currency: ai.currency || 'USD',
+      leverage: ai.leverage ? ('1:' + ai.leverage) : (cfg.leverage || '1:100'),
+      balance: round2(+ai.balance || 0), broker: cfg.broker || ai.company || 'Broker',
+    };
+    S.mt5.history = (bridgeData.deals || bridgeData.trades || []).map(mapBridgeDeal).filter(Boolean).sort((a, b) => a.time_close - b.time_close);
+    S.mt5.positions = [];
+  } else {
+    S.mt5.history = mt5SeedHistory();
+    const base = S.settings.startingCapital || 10000;
+    S.mt5.account = {
+      number: cfg.account, server: cfg.server || 'MetaQuotes-Demo', currency: 'USD',
+      leverage: '1:100', broker: cfg.broker || 'Demo Broker',
+      balance: round2(base + S.mt5.history.reduce((s, d) => s + d.profit, 0)),
+    };
+    mt5SeedPositions();
   }
+  S.mt5.cfg = cfg; S.mt5.connected = true; S.mt5.lastSync = Date.now();
   mt5SyncToTrades();
-  mt5RenderAccount();
+  S.mt5.timer = setInterval(mt5Tick, 5000);
+  S.mt5.syncTimer = setInterval(() => { S.mt5.lastSync = Date.now(); if (mt5ViewOpen()) mt5RenderDash(); }, 60000);
+  mt5StatusSettings();
+  if (mt5ViewOpen()) { showMt5Panel('dash'); mt5RenderDash(); }
   renderDashboard();
+}
+function mt5ViewOpen() {
+  const v = document.getElementById('view-mt5');
+  return v && v.classList.contains('active');
 }
 function mt5SyncToTrades() {
   S.trades = S.trades.filter(t => !(t.source === 'mt5' && !t.exit));
   S.mt5.positions.forEach(p => {
     S.trades.push({
       id: p.id, date: new Date().toISOString().split('T')[0], symbol: p.symbol, direction: p.direction,
-      entry: p.entry, exit: null, size: p.size, pnl: p.livePnl != null ? round2(p.livePnl) : posPnl(p),
+      entry: p.entry, exit: null, size: p.size, pnl: posPnl(p),
       rr: 0, setup: 'MT5', timeframe: '', result: 'open', source: 'mt5',
     });
   });
 }
-function mt5RenderAccount() {
-  if (!S.mt5.account) return;
-  const floating = S.mt5.positions.reduce((s, p) => s + (p.livePnl != null ? p.livePnl : posPnl(p)), 0);
-  const bal = S.mt5.account.balance || 0;
-  const equity = bal + floating;
-  const margin = S.mt5.positions.reduce((s, p) => s + (p.entry * p.size * p.mult) / 100, 0);
-  const set = (id, txt) => { const e = document.getElementById(id); if (e) e.textContent = txt; };
-  set('mt5-balance', '$' + bal.toLocaleString('en-US', { minimumFractionDigits: 2 }));
-  set('mt5-equity', '$' + equity.toLocaleString('en-US', { minimumFractionDigits: 2 }));
-  set('mt5-floating', (floating >= 0 ? '+$' : '-$') + Math.abs(floating).toFixed(2));
-  set('mt5-margin', '$' + margin.toFixed(2));
-  set('mt5-free', '$' + (equity - margin).toFixed(2));
-  set('mt5-open-count', S.mt5.positions.length);
-  const fl = document.getElementById('mt5-floating');
-  if (fl) fl.style.color = floating >= 0 ? 'var(--green)' : 'var(--red)';
+function mt5Tick() {
+  if (!S.mt5.connected) return;
+  S.mt5.positions.forEach(p => { p.price = p.price * (1 + (Math.random() - 0.5) * 0.004); });
+  let closed = false;
+  if (Math.random() < 0.15 && S.mt5.positions.length > 1) {
+    const p = S.mt5.positions.splice(Math.floor(Math.random() * S.mt5.positions.length), 1)[0];
+    const profit = posPnl(p);
+    S.mt5.history.push({
+      ticket: Math.floor(Math.random() * 1e8), symbol: p.symbol, type: p.direction === 'long' ? 'buy' : 'sell',
+      volume: p.size, price_open: p.entry, price_close: mt5Round(p.price, p.symbol),
+      profit, commission: 0, swap: 0, time_close: Date.now(),
+    });
+    S.mt5.account.balance = round2(S.mt5.account.balance + profit);
+    S.trades.push({
+      id: 'mt5-' + Date.now() + '-c', date: new Date().toISOString().split('T')[0], symbol: p.symbol,
+      direction: p.direction, entry: p.entry, exit: mt5Round(p.price, p.symbol), size: p.size,
+      pnl: profit, rr: 0, setup: 'MT5', timeframe: '', result: profit > 2 ? 'win' : profit < -2 ? 'loss' : 'breakeven', source: 'mt5',
+    });
+    S.mt5.positions.push(mt5NewPos(Object.keys(MT5_BASE), Date.now() % 9));
+    save(); renderMiniCal();
+    closed = true;
+  }
+  mt5SyncToTrades();
+  renderDashboard();
+  if (mt5ViewOpen()) {
+    if (closed) mt5RenderDash();
+    else setText2('mt5-synced', 'Last synced ' + timeAgo(S.mt5.lastSync));
+  }
 }
+function mt5StatusSettings() {
+  const el = document.getElementById('mt5-status');
+  if (!el) return;
+  el.textContent = S.mt5.connected ? '● Connected' : '● Disconnected';
+  el.className = 'mt5-status' + (S.mt5.connected ? ' ok' : '');
+}
+
+// ── Connection form → multi-step loader → dashboard ──
+function showMt5Panel(which) {
+  const form = document.getElementById('mt5-form-panel');
+  const loader = document.getElementById('mt5-loader');
+  const dash = document.getElementById('mt5-dash-panel');
+  if (form) form.style.display = which === 'form' ? 'flex' : 'none';
+  if (loader) loader.style.display = which === 'loader' ? 'flex' : 'none';
+  if (dash) dash.style.display = which === 'dash' ? 'block' : 'none';
+}
+function setMt5Step(active) {
+  const order = ['connecting', 'verifying', 'history', 'dashboard'];
+  const ai = order.indexOf(active);
+  document.querySelectorAll('.mt5-step').forEach(el => {
+    const i = order.indexOf(el.dataset.step);
+    el.classList.toggle('active', i === ai);
+    el.classList.toggle('done', i < ai);
+  });
+}
+async function mt5Submit() {
+  const account = val('mt5f-account').trim();
+  const pass = val('mt5f-pass');
+  const server = val('mt5f-server').trim() || 'MetaQuotes-Demo';
+  const broker = val('mt5f-broker').trim();
+  const bridge = val('mt5f-bridge').trim();
+  if (!account) { showToast('Enter your account number', 'error'); return; }
+  const cfg = { account, pass, server, broker, bridge };
+  showMt5Panel('loader');
+  const steps = ['connecting', 'verifying', 'history', 'dashboard'];
+  let bridgeData = null;
+  const fetchP = bridge ? mt5Bridge(bridge, account, pass, server).catch(() => null) : Promise.resolve(null);
+  for (const s of steps) {
+    setMt5Step(s);
+    await sleep(700);
+    if (s === 'verifying') bridgeData = await fetchP;
+  }
+  if (bridge && !bridgeData) showToast('Bridge unreachable — connected with demo data', 'info');
+  mt5Activate(cfg, bridgeData);
+  mt5PersistCfg(cfg);
+  showMt5Panel('dash');
+  mt5RenderDash();
+  showToast('MT5 account connected', 'success');
+}
+function mt5Disconnect() {
+  clearInterval(S.mt5.timer); clearInterval(S.mt5.syncTimer);
+  ['mt5-equity', 'mt5-sym', 'mt5-session'].forEach(id => { if (S.charts[id]) { S.charts[id].destroy(); delete S.charts[id]; } });
+  S.mt5.connected = false; S.mt5.positions = []; S.mt5.history = []; S.mt5.account = null; S.mt5.cfg = null;
+  S.trades = S.trades.filter(t => !(t.source === 'mt5' && !t.exit));
+  localStorage.removeItem('tfg_mt5_conn');
+  showMt5Panel('form');
+  mt5StatusSettings();
+  renderDashboard();
+  showToast('MT5 disconnected — credentials cleared', 'info');
+}
+function mt5PersistCfg(cfg) { localStorage.setItem('tfg_mt5_conn', JSON.stringify(cfg)); }
+function mt5RestoreOnLoad() {
+  const cfg = JSON.parse(localStorage.getItem('tfg_mt5_conn') || 'null');
+  if (!cfg) return;
+  ['account', 'server', 'broker', 'bridge'].forEach(k => { const e = document.getElementById('mt5f-' + k); if (e && cfg[k]) e.value = cfg[k]; });
+  if (cfg.bridge) mt5Bridge(cfg.bridge, cfg.account, cfg.pass, cfg.server).then(d => mt5Activate(cfg, d)).catch(() => mt5Activate(cfg, null));
+  else mt5Activate(cfg, null);
+}
+
+// ── Dashboard rendering ──
+function mt5RenderDash() {
+  const a = S.mt5.account;
+  if (!a) return;
+  const h = S.mt5.history || [];
+  const m = mt5Metrics(h);
+  setText2('mt5d-acc', '#' + a.number);
+  setText2('mt5d-server', a.server);
+  setText2('mt5d-curr', a.currency);
+  setText2('mt5d-lev', a.leverage);
+  setText2('mt5d-broker', a.broker || '');
+  setText2('mt5k-balance', '$' + a.balance.toLocaleString('en-US', { minimumFractionDigits: 2 }));
+  const pnlEl = document.getElementById('mt5k-pnl');
+  if (pnlEl) { pnlEl.textContent = (m.total >= 0 ? '+$' : '-$') + Math.abs(m.total).toFixed(2); pnlEl.style.color = m.total >= 0 ? 'var(--green)' : 'var(--red)'; }
+  setText2('mt5k-wr', m.winRate.toFixed(1) + '%');
+  setText2('mt5k-pf', isFinite(m.pf) ? m.pf.toFixed(2) : '∞');
+  setText2('mt5k-balance-sub', m.trades + ' closed trades');
+  setText2('mt5-synced', 'Last synced ' + timeAgo(S.mt5.lastSync));
+
+  ['mt5-equity', 'mt5-sym', 'mt5-session'].forEach(id => { if (S.charts[id]) { S.charts[id].destroy(); delete S.charts[id]; } });
+  S.charts['mt5-equity'] = mt5EquityChart(h, a.balance);
+  const symMap = {};
+  h.forEach(d => { symMap[d.symbol] = (symMap[d.symbol] || 0) + d.profit; });
+  const se = Object.entries(symMap).sort((x, y) => y[1] - x[1]);
+  S.charts['mt5-sym'] = styledBar('mt5-sym', { labels: se.map(x => x[0]), data: se.map(x => round2(x[1])) });
+  S.charts['mt5-session'] = mt5SessionChart(h);
+  mt5RenderTable(h);
+}
+function mt5EquityChart(h, balance) {
+  const ctx = document.getElementById('mt5-equity');
+  if (!ctx) return;
+  const t = themeColors();
+  const total = h.reduce((s, d) => s + d.profit, 0);
+  let run = balance - total;
+  const labels = [], vals = [];
+  h.forEach(d => { run += d.profit; labels.push(new Date(d.time_close).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })); vals.push(round2(run)); });
+  const fill = (c) => {
+    const ar = c.chart.chartArea; if (!ar) return 'transparent';
+    const g = c.chart.ctx.createLinearGradient(0, ar.top, 0, ar.bottom);
+    g.addColorStop(0, hexA(t.accent, 0.30)); g.addColorStop(1, hexA(t.accent, 0));
+    return g;
+  };
+  return new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{ data: vals, borderColor: t.accent, backgroundColor: fill, fill: true, tension: 0.35, borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 5 }] },
+    options: {
+      responsive: true, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { ...chartTip(t), callbacks: { label: c => ' $' + c.raw.toLocaleString() } } },
+      scales: {
+        x: { grid: { color: t.grid, drawBorder: false }, ticks: { maxTicksLimit: 7, color: t.tick, font: { size: 10 } } },
+        y: { grid: { color: t.grid, drawBorder: false }, ticks: { color: t.tick, font: { size: 10 }, callback: v => '$' + v.toLocaleString() } },
+      },
+    },
+  });
+}
+function mt5SessionChart(h) {
+  const ctx = document.getElementById('mt5-session');
+  if (!ctx) return;
+  const t = themeColors();
+  const ses = { London: [0, 0], 'New York': [0, 0], Asia: [0, 0] };
+  h.forEach(d => {
+    const hr = new Date(d.time_close).getHours();
+    const k = (hr >= 8 && hr < 13) ? 'London' : (hr >= 13 && hr < 22) ? 'New York' : 'Asia';
+    ses[k][d.profit >= 0 ? 0 : 1]++;
+  });
+  const labels = Object.keys(ses);
+  return new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [
+      { label: 'Wins', data: labels.map(l => ses[l][0]), backgroundColor: hexA(t.green, 0.85), borderRadius: 5, maxBarThickness: 26 },
+      { label: 'Losses', data: labels.map(l => ses[l][1]), backgroundColor: hexA(t.red, 0.85), borderRadius: 5, maxBarThickness: 26 },
+    ] },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true, labels: { color: t.tick, boxWidth: 10, usePointStyle: true, font: { size: 10 } } }, tooltip: chartTip(t) },
+      scales: {
+        x: { grid: { display: false, drawBorder: false }, ticks: { color: t.tick, font: { size: 10 } } },
+        y: { grid: { color: t.grid, drawBorder: false }, ticks: { color: t.tick, font: { size: 10 }, precision: 0 } },
+      },
+    },
+  });
+}
+function mt5RenderTable(h) {
+  const tb = document.getElementById('mt5-trades-tbody');
+  if (!tb) return;
+  const rows = [...h].sort((a, b) => b.time_close - a.time_close).slice(0, 10);
+  tb.innerHTML = rows.map(d => `
+    <tr>
+      <td><strong>${d.symbol}</strong></td>
+      <td><span class="bdg ${d.type === 'buy' ? 'bdg-long' : 'bdg-short'}">${d.type.toUpperCase()}</span></td>
+      <td>${d.price_open}</td>
+      <td>${d.price_close}</td>
+      <td>${d.volume}</td>
+      <td class="${d.profit >= 0 ? 'pnl-pos' : 'pnl-neg'}">${d.profit >= 0 ? '+' : ''}$${Math.abs(d.profit).toFixed(2)}</td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">No closed trades</td></tr>';
+}
+
+// ── "+" quick-add menu ──
+function toggleAddMenu(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('add-menu')?.classList.toggle('open');
+}
+function addMenuPick(what) {
+  document.getElementById('add-menu')?.classList.remove('open');
+  if (what === 'trade') openAddTrade();
+  else if (what === 'mt5') showView('mt5');
+}
+document.addEventListener('click', () => document.getElementById('add-menu')?.classList.remove('open'));
 
 /* =================================================================
    AI ANALYSIS — direct Claude API call from the browser

@@ -606,6 +606,9 @@
         <a class="sb-item" onclick="showView('market')" data-view="market">
           <span class="sb-icon">📈</span><span class="sb-label">Market</span>
         </a>
+        <a class="sb-item" onclick="showView('mt5')" data-view="mt5">
+          <span class="sb-icon">🔌</span><span class="sb-label">MT5 Account</span>
+        </a>
         <div class="sb-group">
           <a class="sb-item" onclick="toggleGroup('community')" data-group="community">
             <span class="sb-icon">👥</span><span class="sb-label">Community</span>
@@ -655,7 +658,13 @@
         </div>
         <div class="topbar-right">
           <button class="topbar-icon-btn" onclick="toggleTheme()">🌙</button>
-          <button class="topbar-add-btn" onclick="openAddTrade()">+</button>
+          <div class="add-menu-wrap">
+            <button class="topbar-add-btn" onclick="toggleAddMenu(event)">+</button>
+            <div class="add-menu" id="add-menu">
+              <button onclick="addMenuPick('trade')"><span>➕</span> Add Trade</button>
+              <button onclick="addMenuPick('mt5')"><span>🔌</span> Connect MT5 Account</button>
+            </div>
+          </div>
           <div class="topbar-clock" id="clock"></div>
           <button class="topbar-icon-btn notif">🔔<span class="notif-dot"></span></button>
           <div class="topbar-user-avatar" onclick="showView('settings')">RK
@@ -937,6 +946,85 @@
           </div>
         </div>
 
+        <!-- ── MT5 ACCOUNT ── -->
+        <div id="view-mt5" class="view">
+
+          <!-- Connection form -->
+          <div id="mt5-form-panel" class="mt5-connect-wrap">
+            <div class="mt5-connect-card">
+              <div class="mt5-connect-head">
+                <div class="mt5-connect-logo">MT5</div>
+                <div>
+                  <h2>Connect Your MT5 Account</h2>
+                  <p>Auto-sync your trades using your investor (read-only) password</p>
+                </div>
+              </div>
+              <div class="mt5-readonly-badge"><span>🔒</span> Read-only · no trades can be placed</div>
+              <div class="mt5-form-grid">
+                <div class="fg"><label>Account Number *</label><input class="fi" id="mt5f-account" placeholder="e.g. 51234567" /></div>
+                <div class="fg"><label>Investor Password *</label><input class="fi" id="mt5f-pass" type="password" placeholder="read-only password" /></div>
+                <div class="fg"><label>Broker Server *</label><input class="fi" id="mt5f-server" placeholder="e.g. MetaQuotes-Demo" /></div>
+                <div class="fg"><label>Broker Name (optional)</label><input class="fi" id="mt5f-broker" placeholder="e.g. IC Markets" /></div>
+                <div class="fg full"><label>Bridge API URL (optional)</label><input class="fi" id="mt5f-bridge" placeholder="http://localhost:5001  (leave blank for demo)" /></div>
+              </div>
+              <button class="btn-ai-run mt5-connect-btn" onclick="mt5Submit()">🔌 Connect Account</button>
+              <p class="mt5-note">🔒 The investor password is <strong>read-only by design</strong> — the MT5 server physically cannot execute, modify, or close any trade when authenticated with it, so it's safe to store. Real accounts need the bridge running (<code>python mt5_bridge.py</code>). Leave the Bridge URL blank to preview the dashboard with live demo data.</p>
+            </div>
+          </div>
+
+          <!-- Multi-step loader -->
+          <div id="mt5-loader" class="mt5-loader">
+            <div class="ai-spinner"></div>
+            <div class="mt5-steps">
+              <div class="mt5-step" data-step="connecting"><span class="mt5-step-dot"></span> Connecting to broker…</div>
+              <div class="mt5-step" data-step="verifying"><span class="mt5-step-dot"></span> Verifying credentials…</div>
+              <div class="mt5-step" data-step="history"><span class="mt5-step-dot"></span> Fetching trade history…</div>
+              <div class="mt5-step" data-step="dashboard"><span class="mt5-step-dot"></span> Building dashboard…</div>
+            </div>
+          </div>
+
+          <!-- Live dashboard -->
+          <div id="mt5-dash-panel">
+            <div class="mt5-statusbar">
+              <span class="mt5-live-dot"></span>
+              <div class="mt5-acc-id" id="mt5d-acc">#—</div>
+              <div class="mt5-acc-meta">
+                <span id="mt5d-broker"></span>
+                <span>🖥 <b id="mt5d-server">—</b></span>
+                <span>💱 <b id="mt5d-curr">—</b></span>
+                <span>⚖ <b id="mt5d-lev">—</b></span>
+              </div>
+              <span class="mt5-synced" id="mt5-synced">Last synced just now</span>
+              <button class="tb-btn danger sm" onclick="mt5Disconnect()">Disconnect</button>
+            </div>
+
+            <div class="an-kpi-row">
+              <div class="an-kpi"><div class="an-kpi-icon blue">💲</div><div><div class="an-kpi-val" id="mt5k-balance">$0.00</div><div class="an-kpi-label">BALANCE</div><div class="an-kpi-sub" id="mt5k-balance-sub">0 closed trades</div></div></div>
+              <div class="an-kpi"><div class="an-kpi-icon green-bg">📈</div><div><div class="an-kpi-val" id="mt5k-pnl">$0.00</div><div class="an-kpi-label">TOTAL P&L</div><div class="an-kpi-sub">Realized profit/loss</div></div></div>
+              <div class="an-kpi"><div class="an-kpi-icon purple">◎</div><div><div class="an-kpi-val" id="mt5k-wr">0%</div><div class="an-kpi-label">WIN RATE</div><div class="an-kpi-sub">Winning trades</div></div></div>
+              <div class="an-kpi"><div class="an-kpi-icon orange">⚡</div><div><div class="an-kpi-val" id="mt5k-pf">0.00</div><div class="an-kpi-label">PROFIT FACTOR</div><div class="an-kpi-sub">Gross profit ÷ loss</div></div></div>
+            </div>
+
+            <div class="an-main-row">
+              <div class="an-card wide"><h4>Equity Curve · Last 30 Days</h4><canvas id="mt5-equity" height="100"></canvas></div>
+            </div>
+            <div class="an-charts-row" style="grid-template-columns:1fr 1fr">
+              <div class="an-card"><h4>P&L by Symbol</h4><canvas id="mt5-sym" height="150"></canvas></div>
+              <div class="an-card"><h4>Win / Loss by Session</h4><canvas id="mt5-session" height="150"></canvas></div>
+            </div>
+
+            <div class="dash-card" style="margin-top:14px">
+              <div class="op-header"><span>Recent Closed Trades</span><span class="live-badge">● LIVE</span></div>
+              <div class="trades-table-wrap" style="border:none">
+                <table class="trades-table">
+                  <thead><tr><th>Symbol</th><th>Direction</th><th>Entry</th><th>Exit</th><th>Volume</th><th>P&amp;L</th></tr></thead>
+                  <tbody id="mt5-trades-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- ── MARKET ── -->
         <div id="view-market" class="view">
           <div class="market-grid">
@@ -986,24 +1074,8 @@
             </div>
             <div class="settings-section mt5-card">
               <h3>MT5 Account Sync <span class="mt5-status" id="mt5-status">● Disconnected</span></h3>
-              <div class="sett-row"><label>Login</label><input class="sett-input" id="mt5-login" placeholder="e.g. 51234567" /></div>
-              <div class="sett-row"><label>Investor Password</label><input class="sett-input" id="mt5-pass" type="password" placeholder="read-only password" /></div>
-              <div class="sett-row"><label>Server</label><input class="sett-input" id="mt5-server" placeholder="e.g. MetaQuotes-Demo" /></div>
-              <div class="sett-row"><label>Bridge API URL</label><input class="sett-input" id="mt5-bridge" placeholder="https://your-mt5-bridge/api  (blank = demo)" /></div>
-              <div class="sett-row"><label>Sync Interval (sec)</label><input class="sett-input" id="mt5-interval" type="number" min="2" value="5" /></div>
-              <div class="sett-actions">
-                <button class="tb-btn primary" id="mt5-connect-btn" onclick="mt5Connect()">🔌 Connect &amp; Sync</button>
-                <button class="tb-btn" onclick="mt5Disconnect()">Disconnect</button>
-              </div>
-              <div class="mt5-account" id="mt5-account" style="display:none">
-                <div class="mt5-stat"><span>BALANCE</span><strong id="mt5-balance">$0.00</strong></div>
-                <div class="mt5-stat"><span>EQUITY</span><strong id="mt5-equity">$0.00</strong></div>
-                <div class="mt5-stat"><span>OPEN P&amp;L</span><strong id="mt5-floating">$0.00</strong></div>
-                <div class="mt5-stat"><span>MARGIN</span><strong id="mt5-margin">$0.00</strong></div>
-                <div class="mt5-stat"><span>FREE MARGIN</span><strong id="mt5-free">$0.00</strong></div>
-                <div class="mt5-stat"><span>OPEN POSITIONS</span><strong id="mt5-open-count">0</strong></div>
-              </div>
-              <p class="mt5-note">🔒 The investor password is <strong>read-only</strong> — it can never place or modify trades. Real accounts need a read-only bridge endpoint (e.g. MetaApi); browsers can't speak the MT5 protocol directly. Leave Bridge URL blank to preview with live demo data that streams in real time.</p>
+              <p class="mt5-note" style="margin-top:0">Connect your MetaTrader 5 account with your read-only investor password to auto-sync trades and unlock the live account dashboard.</p>
+              <button class="tb-btn primary" onclick="showView('mt5')">🔌 Open MT5 Connection →</button>
             </div>
 
             <div class="settings-section">

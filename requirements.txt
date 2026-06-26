@@ -1,0 +1,3 @@
+MetaTrader5
+flask
+flask-cors
