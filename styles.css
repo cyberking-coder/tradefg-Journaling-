@@ -689,3 +689,110 @@ select.fi{cursor:pointer}
   .form-row{grid-template-columns:1fr}
   .market-grid{grid-template-columns:1fr 1fr}
 }
+
+/* =================================================================
+   THEME ACCENT + GLOW + LIGHT MODE
+================================================================= */
+:root{ --accent:#3b82f6; --glow:rgba(59,130,246,0.20); }
+
+body.light{
+  --bg0:#eef2f9; --bg1:#ffffff; --bg2:#f4f7fc; --bg3:#e9eef7;
+  --bg-card:#ffffff; --bg-card2:#f7f9fd; --bg-hover:#eef3fb;
+  --border:#e2e8f2; --border2:#d2dcec;
+  --text1:#0b1424; --text2:#445069; --text3:#7587a3;
+  --glow:rgba(59,130,246,0.14);
+  --shadow:0 6px 26px rgba(20,45,90,0.10);
+  --shadow-blue:0 0 24px rgba(59,130,246,0.18);
+  background:var(--bg0);
+}
+body.light .app-topbar,body.light .nav{background:rgba(255,255,255,0.85)}
+body.light .news-ticker{background:var(--bg2)}
+body.light .sidebar{background:var(--bg1)}
+
+/* Mouse-follow glow — respects current theme accent */
+.kpi-card,.an-kpi,.an-card,.dash-card,.market-card,.settings-section,
+.ai-report-card,.ai-metric-box{position:relative;overflow:hidden}
+.kpi-card::after,.an-kpi::after,.an-card::after,.dash-card::after,
+.market-card::after,.settings-section::after,.ai-report-card::after,.ai-metric-box::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  opacity:0;transition:opacity .3s ease;z-index:0;
+  background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%),var(--glow),transparent 60%);
+}
+.kpi-card:hover::after,.an-kpi:hover::after,.an-card:hover::after,.dash-card:hover::after,
+.market-card:hover::after,.settings-section:hover::after,.ai-report-card:hover::after,.ai-metric-box:hover::after{opacity:1}
+.kpi-card:hover,.an-kpi:hover,.an-card:hover,.market-card:hover{border-color:rgba(59,130,246,0.45);box-shadow:0 0 0 1px rgba(59,130,246,0.12),var(--shadow-blue)}
+.kpi-card>*,.an-kpi>*,.an-card>*,.dash-card>*,.market-card>*,.settings-section>*,
+.ai-report-card>*,.ai-metric-box>*{position:relative;z-index:1}
+
+/* Performance chart cards — more room + detailing for the redesigned bars */
+.an-charts-row .an-card,.an-main-row .an-card{min-height:210px;display:flex;flex-direction:column}
+.an-card h4{display:flex;align-items:center;gap:7px}
+.an-card h4::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.an-card canvas{flex:1;margin-top:2px}
+
+/* =================================================================
+   MT5 SYNC
+================================================================= */
+.mt5-status{font-size:11px;font-weight:700;padding:2px 9px;border-radius:100px;margin-left:8px;background:rgba(255,68,68,0.12);color:var(--red);vertical-align:middle}
+.mt5-status.ok{background:rgba(0,230,118,0.12);color:var(--green)}
+.mt5-status.warn{background:rgba(245,158,11,0.14);color:var(--orange)}
+.mt5-account{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.mt5-stat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px}
+.mt5-stat span{display:block;font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.4px;margin-bottom:4px}
+.mt5-stat strong{font-size:16px;font-weight:800}
+.mt5-note{font-size:11px;color:var(--text3);margin-top:14px;line-height:1.6}
+@keyframes pulseLive{0%,100%{opacity:1}50%{opacity:.4}}
+.mt5-status.ok{animation:pulseLive 1.6s infinite}
+
+/* =================================================================
+   AI ANALYSIS
+================================================================= */
+.ai-pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;background:rgba(59,130,246,0.12);color:var(--blue-l);border:1px solid rgba(59,130,246,0.25);margin-left:6px;vertical-align:middle}
+.ai-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.ai-tool-left{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--text3)}
+.ai-select{padding:8px 12px;border-radius:var(--r);background:var(--bg-card);border:1px solid var(--border);color:var(--text1);font-size:12px;font-family:var(--font);cursor:pointer;outline:none}
+.btn-ai-run{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border:none;padding:11px 24px;border-radius:100px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .2s;box-shadow:0 4px 18px rgba(59,130,246,0.35)}
+.btn-ai-run:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(59,130,246,0.5)}
+.btn-ai-run:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.ai-report-wrap{min-height:300px}
+.ai-empty,.ai-error{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:60px 20px;color:var(--text3)}
+.ai-empty span{font-size:46px;opacity:.5}
+.ai-empty h3{font-size:17px;font-weight:700;color:var(--text1)}
+.ai-empty p{font-size:13px;max-width:420px;line-height:1.6}
+.ai-link{color:var(--blue-l);cursor:pointer;text-decoration:underline}
+.ai-error{color:var(--red);font-size:13px;font-weight:600}
+.ai-loading{display:flex;flex-direction:column;align-items:center;gap:16px;padding:70px 20px;color:var(--text2)}
+.ai-spinner{width:44px;height:44px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-report{display:grid;grid-template-columns:260px 1fr;gap:16px}
+.ai-report-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r2);padding:22px}
+.ai-grade-card{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px}
+.ai-grade-ring{width:130px;height:130px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:900;color:#fff;background:conic-gradient(var(--accent) calc(var(--score,70)*1%),var(--bg3) 0);position:relative}
+.ai-grade-ring::before{content:'';position:absolute;inset:9px;border-radius:50%;background:var(--bg-card)}
+.ai-grade-ring span{position:relative;z-index:1;background:linear-gradient(135deg,#3b82f6,#60a5fa);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.ai-grade-label{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase}
+.ai-score-num{font-size:13px;color:var(--text2);font-weight:700}
+.ai-metrics-grid{display:grid;gap:14px;margin-top:4px}
+.ai-metric-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.ai-metric-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.ai-metric-name{font-size:12px;font-weight:600;color:var(--text2)}
+.ai-metric-pct{font-size:13px;font-weight:800;color:var(--text1)}
+.ai-metric-track{height:8px;border-radius:5px;background:var(--bg3);overflow:hidden}
+.ai-metric-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#1d4ed8,#3b82f6,#60a5fa);width:0;transition:width 1s cubic-bezier(.2,.8,.2,1);box-shadow:0 0 10px rgba(59,130,246,0.6)}
+.ai-section-title{font-size:11px;font-weight:700;color:var(--blue-l);text-transform:uppercase;letter-spacing:1px;margin:0 0 10px}
+.ai-summary{font-size:13.5px;line-height:1.75;color:var(--text2)}
+.ai-insight{display:flex;gap:9px;align-items:flex-start;padding:11px 13px;border-radius:var(--r);font-size:12.5px;line-height:1.55;margin-bottom:8px;border:1px solid var(--border);background:var(--bg2)}
+.ai-insight.good{background:rgba(0,230,118,0.07);border-color:rgba(0,230,118,0.2)}
+.ai-insight.warn{background:rgba(245,158,11,0.07);border-color:rgba(245,158,11,0.22)}
+.ai-insight.tip{background:rgba(59,130,246,0.07);border-color:rgba(59,130,246,0.2)}
+.ai-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.ai-list{list-style:none}
+.ai-list li{font-size:12.5px;color:var(--text2);padding:6px 0 6px 20px;position:relative;line-height:1.5}
+.ai-list li::before{content:'';position:absolute;left:2px;top:12px;width:6px;height:6px;border-radius:50%}
+.ai-list.good li::before{background:var(--green)}
+.ai-list.bad li::before{background:var(--red)}
+.ai-actions-list li{counter-increment:ai;padding-left:28px}
+.ai-actions-list li::before{content:counter(ai);left:0;top:6px;width:18px;height:18px;border-radius:50%;background:rgba(59,130,246,0.15);color:var(--blue-l);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.ai-actions-list{counter-reset:ai}
+.badge-new.xs{font-size:7px;padding:1px 3px}
+@media(max-width:900px){.ai-report{grid-template-columns:1fr}.ai-cols{grid-template-columns:1fr}.mt5-account{grid-template-columns:1fr 1fr}}

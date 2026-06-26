@@ -16,6 +16,7 @@ const S = {
 // ── INIT ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   load();
+  loadTheme();
   if (!S.trades.length) loadSampleData();
   setToday();
   startClock();
@@ -25,11 +26,34 @@ document.addEventListener('DOMContentLoaded', () => {
   renderMiniCal();
   renderJournalPanel();
   renderLeaderboard();
+  initGlow();
+  mt5Restore();
+  restoreAIKey();
   document.getElementById('global-search').addEventListener('input', () => { if (document.getElementById('view-trades').classList.contains('active')) renderTrades(); });
 });
 
 // ── THEME ─────────────────────────────────────────────────────
-function toggleTheme() { document.body.classList.toggle('light'); }
+function toggleTheme() {
+  const light = document.body.classList.toggle('light');
+  localStorage.setItem('tfg_theme', light ? 'light' : 'dark');
+  document.querySelectorAll('#theme-toggle, .topbar-icon-btn').forEach(b => {
+    if (b.textContent === '🌙' || b.textContent === '☀️') b.textContent = light ? '☀️' : '🌙';
+  });
+  setTimeout(refreshCharts, 60);
+}
+function loadTheme() {
+  if (localStorage.getItem('tfg_theme') === 'light') {
+    document.body.classList.add('light');
+    document.querySelectorAll('#theme-toggle, .topbar-icon-btn').forEach(b => {
+      if (b.textContent === '🌙') b.textContent = '☀️';
+    });
+  }
+}
+function refreshCharts() {
+  if (document.getElementById('view-dashboard')?.classList.contains('active')) drawEquityChart();
+  if (document.getElementById('view-performance')?.classList.contains('active')) { updateAnalytics(); drawAnalyticsCharts(); }
+  if (document.getElementById('view-trade-analysis')?.classList.contains('active')) drawTradeAnalysisCharts();
+}
 
 // ── PAGES ─────────────────────────────────────────────────────
 function showPage(p) {
@@ -60,6 +84,7 @@ function showView(v) {
     journal:       ['Journal',           'Rich trade journaling'],
     performance:   ['Performance Analytics', 'Analyze your trading patterns'],
     'trade-analysis': ['Trade Analysis', 'Deep dive into individual trades'],
+    'ai-analysis': ['AI Analysis',       'Claude-powered performance review'],
     market:        ['Market',            'Live market overview'],
     lounge:        ['Traders Lounge',    'Community discussion'],
     rooms:         ['Trade Rooms',       'Coming soon'],
@@ -76,6 +101,7 @@ function showView(v) {
   if (v === 'journal') renderJournalPanel();
   if (v === 'performance') { updateAnalytics(); setTimeout(drawAnalyticsCharts, 80); }
   if (v === 'trade-analysis') setTimeout(drawTradeAnalysisCharts, 80);
+  if (v === 'ai-analysis') restoreAIKey();
   if (v === 'leaderboard') renderLeaderboard();
 }
 
@@ -322,36 +348,9 @@ function renderTopPerformers() {
 
 // ── EQUITY CHART ──────────────────────────────────────────────
 function drawEquityChart() {
-  const ctx = document.getElementById('equityChart');
-  if (!ctx) return;
   if (S.charts.equity) { S.charts.equity.destroy(); delete S.charts.equity; }
-
   const filtered = filterByEquityPeriod(S.trades.filter(t=>t.exit));
-  const sorted = [...filtered].sort((a,b)=>a.date.localeCompare(b.date));
-  let running = S.settings.startingCapital;
-  const labels = ['Start'], values = [running];
-  sorted.forEach(t => { running += t.pnl; labels.push(t.date); values.push(parseFloat(running.toFixed(2))); });
-
-  S.charts.equity = new Chart(ctx, {
-    type:'line',
-    data:{
-      labels,
-      datasets:[{
-        data:values, label:'Equity',
-        borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.08)',
-        fill:true, tension:0.4, borderWidth:2.5,
-        pointRadius: values.length>40?0:3, pointHoverRadius:6, pointBackgroundColor:'#3b82f6',
-      }],
-    },
-    options:{
-      responsive:true, interaction:{mode:'index',intersect:false},
-      plugins:{legend:{display:false}, tooltip:{backgroundColor:'#111e38',borderColor:'#1e2f4a',borderWidth:1,padding:10,callbacks:{label:c=>' $'+c.raw.toLocaleString()}}},
-      scales:{
-        x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{maxTicksLimit:8,color:'#4a5f80',font:{size:10}}},
-        y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#4a5f80',font:{size:10},callback:v=>'$'+v.toLocaleString()}},
-      },
-    },
-  });
+  S.charts.equity = lineEquity(filtered, 'equityChart');
 }
 
 function filterByEquityPeriod(trades) {
@@ -800,52 +799,41 @@ function drawAnalyticsCharts() {
   });
 }
 
-function drawAnEquity(closed, id) {
-  const ctx = document.getElementById(id); if (!ctx) return;
-  const sorted = [...closed].sort((a,b)=>a.date.localeCompare(b.date));
-  let r = S.settings.startingCapital;
-  const labels=['Start'], vals=[r];
-  sorted.forEach(t=>{r+=t.pnl;labels.push(t.date);vals.push(parseFloat(r.toFixed(2)));});
-  return new Chart(ctx,{type:'line',data:{labels,datasets:[{data:vals,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',fill:true,tension:0.4,borderWidth:2,pointRadius:0}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{backgroundColor:'#111e38',borderColor:'#1e2f4a',borderWidth:1}},scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{maxTicksLimit:6,color:'#4a5f80',font:{size:9}}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#4a5f80',font:{size:9},callback:v=>'$'+v.toLocaleString()}}}}});
-}
+function drawAnEquity(closed, id) { return lineEquity(closed, id); }
 function drawLongShort(closed, id) {
-  const ctx = document.getElementById(id); if (!ctx) return;
   const lp = closed.filter(t=>t.direction==='long').reduce((s,t)=>s+t.pnl,0);
   const sp = closed.filter(t=>t.direction==='short').reduce((s,t)=>s+t.pnl,0);
-  return new Chart(ctx,{type:'bar',data:{labels:['Long','Short'],datasets:[{data:[parseFloat(lp.toFixed(2)),parseFloat(sp.toFixed(2))],backgroundColor:[lp>=0?'rgba(0,230,118,0.7)':'rgba(255,68,68,0.7)',sp>=0?'rgba(0,230,118,0.7)':'rgba(255,68,68,0.7)'],borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#4a5f80',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#4a5f80',font:{size:10},callback:v=>'$'+v}}}}});
+  return styledBar(id, { labels:['Long','Short'], data:[round2(lp),round2(sp)] });
 }
 function drawDow(closed, id) {
-  const ctx = document.getElementById(id); if (!ctx) return;
   const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const dow=new Array(7).fill(0);
   closed.forEach(t=>{const d=new Date(t.date+'T12:00:00');dow[d.getDay()]+=t.pnl;});
-  return new Chart(ctx,{type:'bar',data:{labels:days,datasets:[{data:dow.map(v=>parseFloat(v.toFixed(2))),backgroundColor:dow.map(v=>v>=0?'rgba(59,130,246,0.7)':'rgba(255,68,68,0.7)'),borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#4a5f80',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#4a5f80',font:{size:10},callback:v=>'$'+v}}}}});
+  return styledBar(id, { labels:days, data:dow.map(round2) });
 }
 function drawSymbols(closed, id) {
-  const ctx = document.getElementById(id); if (!ctx) return;
   const map={};
-  closed.forEach(t=>{if(!map[t.symbol])map[t.symbol]=0;map[t.symbol]+=t.pnl;});
+  closed.forEach(t=>{map[t.symbol]=(map[t.symbol]||0)+t.pnl;});
   const s=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  return new Chart(ctx,{type:'bar',data:{labels:s.map(x=>x[0]),datasets:[{data:s.map(x=>parseFloat(x[1].toFixed(2))),backgroundColor:s.map(x=>x[1]>=0?'rgba(0,230,118,0.7)':'rgba(255,68,68,0.7)'),borderRadius:4}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#4a5f80',font:{size:10},callback:v=>'$'+v}},y:{grid:{display:false},ticks:{color:'#4a5f80',font:{size:10}}}}}});
+  return styledBar(id, { labels:s.map(x=>x[0]), data:s.map(x=>round2(x[1])), horizontal:true });
 }
 function drawMonthly(closed, id) {
-  const ctx = document.getElementById(id); if (!ctx) return;
   const map={};
-  closed.forEach(t=>{const k=t.date.slice(0,7);if(!map[k])map[k]=0;map[k]+=t.pnl;});
+  closed.forEach(t=>{const k=t.date.slice(0,7);map[k]=(map[k]||0)+t.pnl;});
   const s=Object.entries(map).sort((a,b)=>a[0].localeCompare(b[0]));
-  return new Chart(ctx,{type:'bar',data:{labels:s.map(x=>x[0]),datasets:[{data:s.map(x=>parseFloat(x[1].toFixed(2))),backgroundColor:s.map(x=>x[1]>=0?'rgba(59,130,246,0.7)':'rgba(255,68,68,0.7)'),borderRadius:5}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{backgroundColor:'#111e38',borderColor:'#1e2f4a',borderWidth:1}},scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#4a5f80',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#4a5f80',font:{size:10},callback:v=>'$'+v}}}}});
+  return styledBar(id, { labels:s.map(x=>x[0]), data:s.map(x=>round2(x[1])) });
 }
 function drawDist(closed, id) {
-  const ctx = document.getElementById(id); if (!ctx) return;
   if(!closed.length) return;
   const pnls=closed.map(t=>t.pnl);
   const min=Math.min(...pnls),max=Math.max(...pnls),bins=16;
-  const size=(max-min)/bins;
+  const size=(max-min)/bins || 1;
   const counts=new Array(bins).fill(0);
   const labels=[];
   for(let i=0;i<bins;i++)labels.push('$'+(min+i*size).toFixed(0));
   pnls.forEach(p=>{const i=Math.min(Math.floor((p-min)/size),bins-1);counts[i]++;});
-  return new Chart(ctx,{type:'bar',data:{labels,datasets:[{data:counts,backgroundColor:labels.map(l=>parseFloat(l.replace('$',''))>=0?'rgba(0,230,118,0.7)':'rgba(255,68,68,0.7)'),borderRadius:3}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#4a5f80',font:{size:9},maxTicksLimit:8}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#4a5f80',font:{size:9}}}}}});
+  return styledBar(id, { labels, data:counts, money:false, maxTick:8,
+    sign:(v,i)=>parseFloat(labels[i].replace('$',''))>=0 });
 }
 
 function drawTradeAnalysisCharts() {
@@ -863,31 +851,29 @@ function drawTradeAnalysisCharts() {
 }
 
 function drawSetup(closed, id) {
-  const ctx = document.getElementById(id); if (!ctx) return;
   const map={};
-  closed.forEach(t=>{if(!t.setup)return;if(!map[t.setup])map[t.setup]=0;map[t.setup]+=t.pnl;});
+  closed.forEach(t=>{if(!t.setup)return;map[t.setup]=(map[t.setup]||0)+t.pnl;});
   const s=Object.entries(map).sort((a,b)=>b[1]-a[1]);
-  return new Chart(ctx,{type:'bar',data:{labels:s.map(x=>x[0]),datasets:[{data:s.map(x=>parseFloat(x[1].toFixed(2))),backgroundColor:s.map(x=>x[1]>=0?'rgba(59,130,246,0.7)':'rgba(255,68,68,0.7)'),borderRadius:5}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#4a5f80',font:{size:10},callback:v=>'$'+v}},y:{grid:{display:false},ticks:{color:'#4a5f80',font:{size:10}}}}}});
+  return styledBar(id, { labels:s.map(x=>x[0]), data:s.map(x=>round2(x[1])), horizontal:true });
 }
 function drawWL(closed, id) {
   const ctx = document.getElementById(id); if (!ctx) return;
-  const w=closed.filter(t=>t.result==='win').length;
-  const l=closed.filter(t=>t.result==='loss').length;
-  const b=closed.filter(t=>t.result==='breakeven').length;
-  return new Chart(ctx,{type:'doughnut',data:{labels:['Win','Loss','Breakeven'],datasets:[{data:[w,l,b],backgroundColor:['rgba(0,230,118,0.8)','rgba(255,68,68,0.8)','rgba(245,158,11,0.8)'],borderColor:['#00e676','#ff4444','#f59e0b'],borderWidth:2}]},options:{responsive:true,cutout:'70%',plugins:{legend:{position:'bottom',labels:{padding:10,boxWidth:10,color:'#8899bb',font:{size:10}}},tooltip:{backgroundColor:'#111e38',borderColor:'#1e2f4a',borderWidth:1}}}});
+  const t=themeColors();
+  const w=closed.filter(x=>x.result==='win').length;
+  const l=closed.filter(x=>x.result==='loss').length;
+  const b=closed.filter(x=>x.result==='breakeven').length;
+  return new Chart(ctx,{type:'doughnut',data:{labels:['Win','Loss','Breakeven'],datasets:[{data:[w,l,b],backgroundColor:['rgba(0,230,118,0.85)','rgba(255,68,68,0.85)','rgba(245,158,11,0.85)'],borderColor:t.bg,borderWidth:3,hoverOffset:6}]},options:{responsive:true,cutout:'68%',plugins:{legend:{position:'bottom',labels:{padding:12,boxWidth:10,usePointStyle:true,color:t.tick,font:{size:11}}},tooltip:chartTip(t)}}});
 }
 function drawSession(closed, id) {
-  const ctx = document.getElementById(id); if (!ctx) return;
   const ses={'Asian':0,'London':0,'New York':0,'London-NY':0};
   closed.forEach(t=>{const h=new Date(t.date+'T12:00:00').getHours();if(h>=0&&h<8)ses['Asian']+=t.pnl;else if(h>=8&&h<13)ses['London']+=t.pnl;else if(h>=13&&h<17)ses['New York']+=t.pnl;else ses['London-NY']+=t.pnl;});
   const s=Object.entries(ses);
-  return new Chart(ctx,{type:'bar',data:{labels:s.map(x=>x[0]),datasets:[{data:s.map(x=>parseFloat(x[1].toFixed(2))),backgroundColor:s.map(x=>x[1]>=0?'rgba(59,130,246,0.7)':'rgba(255,68,68,0.7)'),borderRadius:5}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#4a5f80',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#4a5f80',font:{size:10},callback:v=>'$'+v}}}}});
+  return styledBar(id, { labels:s.map(x=>x[0]), data:s.map(x=>round2(x[1])) });
 }
 function drawRRChart(closed, id) {
-  const ctx = document.getElementById(id); if (!ctx) return;
   const buckets={'<0.5':0,'0.5-1':0,'1-2':0,'2-3':0,'>3':0};
   closed.forEach(t=>{const r=t.rr||0;if(r<0.5)buckets['<0.5']++;else if(r<1)buckets['0.5-1']++;else if(r<2)buckets['1-2']++;else if(r<3)buckets['2-3']++;else buckets['>3']++;});
-  return new Chart(ctx,{type:'bar',data:{labels:Object.keys(buckets),datasets:[{data:Object.values(buckets),backgroundColor:'rgba(59,130,246,0.7)',borderRadius:5}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#4a5f80',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#4a5f80',font:{size:10}}}}}});
+  return styledBar(id, { labels:Object.keys(buckets), data:Object.values(buckets), money:false, mode:'accent' });
 }
 
 // ── LEADERBOARD ───────────────────────────────────────────────
@@ -951,3 +937,512 @@ function showToast(msg, type='info') {
 Chart.defaults.color = '#8899bb';
 Chart.defaults.borderColor = '#1e2f4a';
 Chart.defaults.font.family = 'Inter';
+
+/* =================================================================
+   CHART ENGINE — redesigned, theme-aware bars with value labels
+================================================================= */
+const round2 = v => parseFloat((v || 0).toFixed(2));
+
+function cssVar(name, fb) {
+  const v = getComputedStyle(document.body).getPropertyValue(name).trim();
+  return v || fb;
+}
+function themeColors() {
+  const light = document.body.classList.contains('light');
+  return {
+    accent: cssVar('--blue', '#3b82f6'),
+    green:  cssVar('--green', '#00e676'),
+    red:    cssVar('--red', '#ff4444'),
+    tick:   cssVar('--text3', '#4a5f80'),
+    bg:     cssVar('--bg-card', '#111e38'),
+    grid:   light ? 'rgba(20,45,90,0.07)' : 'rgba(255,255,255,0.04)',
+  };
+}
+function hexA(hex, a) {
+  hex = (hex || '#3b82f6').replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const n = parseInt(hex, 16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+}
+function makeGrad(ctx, area, hex, horizontal) {
+  const g = horizontal
+    ? ctx.createLinearGradient(area.left, 0, area.right, 0)
+    : ctx.createLinearGradient(0, area.bottom, 0, area.top);
+  g.addColorStop(0, hexA(hex, 0.22));
+  g.addColorStop(1, hexA(hex, 0.95));
+  return g;
+}
+function chartTip(t) {
+  const light = document.body.classList.contains('light');
+  return {
+    backgroundColor: light ? '#ffffff' : '#0e1a30',
+    titleColor: t.tick, bodyColor: light ? '#0b1424' : '#f0f4ff',
+    borderColor: t.accent, borderWidth: 1, padding: 10, cornerRadius: 8, displayColors: false,
+  };
+}
+function chartScales(t, { horizontal, money, maxTick }) {
+  const valTicks = { color: t.tick, font: { size: 10 }, callback: v => money ? '$' + v : v };
+  const catTicks = { color: t.tick, font: { size: 10 } };
+  if (maxTick) { valTicks.maxTicksLimit = maxTick; catTicks.maxTicksLimit = maxTick; }
+  const valAxis = { grid: { color: t.grid, drawBorder: false }, ticks: valTicks };
+  const catAxis = { grid: { display: false, drawBorder: false }, ticks: catTicks };
+  return horizontal ? { x: valAxis, y: catAxis } : { x: catAxis, y: valAxis };
+}
+
+// Plugin: draw the value at the end of each bar
+const valueLabelsPlugin = {
+  id: 'valueLabels',
+  afterDatasetsDraw(chart, args, opts) {
+    if (!opts || !opts.show) return;
+    const { ctx } = chart;
+    const horizontal = chart.options.indexAxis === 'y';
+    ctx.save();
+    chart.data.datasets.forEach((ds, di) => {
+      const meta = chart.getDatasetMeta(di);
+      meta.data.forEach((bar, i) => {
+        const v = ds.data[i];
+        if (v === null || v === undefined) return;
+        ctx.fillStyle = opts.color || '#8899bb';
+        ctx.font = '700 10px Inter';
+        ctx.textBaseline = 'middle';
+        const label = opts.fmt ? opts.fmt(v) : '' + v;
+        if (horizontal) {
+          ctx.textAlign = v >= 0 ? 'left' : 'right';
+          ctx.fillText(label, bar.x + (v >= 0 ? 6 : -6), bar.y);
+        } else {
+          ctx.textAlign = 'center';
+          ctx.fillText(label, bar.x, bar.y + (v >= 0 ? -9 : 13));
+        }
+      });
+    });
+    ctx.restore();
+  },
+};
+Chart.register(valueLabelsPlugin);
+
+function styledBar(id, opts) {
+  const { labels, data, horizontal = false, money = true, mode = 'posneg', sign, maxTick } = opts;
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const t = themeColors();
+  const signFn = sign || (v => v >= 0);
+  const bg = (c) => {
+    const area = c.chart.chartArea;
+    if (!area) return t.accent;
+    const pos = mode === 'accent' ? true : signFn(c.raw, c.dataIndex);
+    const col = mode === 'accent' ? t.accent : (pos ? t.green : t.red);
+    return makeGrad(c.chart.ctx, area, col, horizontal);
+  };
+  const fmt = money
+    ? (v => (v >= 0 ? '+$' : '-$') + Math.abs(Math.round(v)))
+    : (v => '' + v);
+  return new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{
+      data, backgroundColor: bg, hoverBackgroundColor: bg,
+      borderRadius: 6, borderSkipped: false,
+      maxBarThickness: horizontal ? 20 : 46,
+      categoryPercentage: 0.72, barPercentage: 0.82,
+    }] },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      animation: { duration: 650, easing: 'easeOutQuart' },
+      indexAxis: horizontal ? 'y' : 'x',
+      layout: { padding: { top: 16, right: horizontal ? 36 : 8 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: chartTip(t),
+        valueLabels: { show: true, color: t.tick, fmt },
+      },
+      scales: chartScales(t, { horizontal, money, maxTick }),
+    },
+  });
+}
+
+function lineEquity(closed, id) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const t = themeColors();
+  const sorted = [...closed].sort((a, b) => a.date.localeCompare(b.date));
+  let r = S.settings.startingCapital;
+  const labels = ['Start'], vals = [r];
+  sorted.forEach(tr => { r += tr.pnl; labels.push(tr.date); vals.push(round2(r)); });
+  const fill = (c) => {
+    const a = c.chart.chartArea;
+    if (!a) return 'transparent';
+    const g = c.chart.ctx.createLinearGradient(0, a.top, 0, a.bottom);
+    g.addColorStop(0, hexA(t.accent, 0.30));
+    g.addColorStop(1, hexA(t.accent, 0));
+    return g;
+  };
+  return new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{
+      data: vals, borderColor: t.accent, backgroundColor: fill, fill: true,
+      tension: 0.4, borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 6, pointBackgroundColor: t.accent,
+    }] },
+    options: {
+      responsive: true, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { ...chartTip(t), callbacks: { label: c => ' $' + c.raw.toLocaleString() } } },
+      scales: {
+        x: { grid: { color: t.grid, drawBorder: false }, ticks: { maxTicksLimit: 7, color: t.tick, font: { size: 10 } } },
+        y: { grid: { color: t.grid, drawBorder: false }, ticks: { color: t.tick, font: { size: 10 }, callback: v => '$' + v.toLocaleString() } },
+      },
+    },
+  });
+}
+
+/* =================================================================
+   MOUSE-FOLLOW GLOW (theme-aware accent)
+================================================================= */
+function initGlow() {
+  const sel = '.kpi-card,.an-kpi,.an-card,.dash-card,.market-card,.settings-section,.ai-report-card,.ai-metric-box';
+  document.addEventListener('mousemove', e => {
+    const card = e.target.closest(sel);
+    if (!card) return;
+    const r = card.getBoundingClientRect();
+    card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+    card.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  });
+}
+
+/* =================================================================
+   MT5 REAL-TIME ACCOUNT SYNC (investor password, read-only)
+================================================================= */
+S.mt5 = { connected: false, timer: null, account: null, positions: [] };
+
+const MT5_BASE = { XAUUSD: 2650, EURUSD: 1.085, GBPUSD: 1.27, BTCUSD: 95000, USDJPY: 148.2, ETHUSD: 3500 };
+const MT5_MULT = { XAUUSD: 1, EURUSD: 1000, GBPUSD: 1000, BTCUSD: 0.2, USDJPY: 90, ETHUSD: 2 };
+
+function val(id) { const e = document.getElementById(id); return e ? e.value : ''; }
+function mt5SaveCfg() {
+  localStorage.setItem('tfg_mt5', JSON.stringify({
+    login: val('mt5-login'), pass: val('mt5-pass'), server: val('mt5-server'),
+    bridge: val('mt5-bridge'), interval: val('mt5-interval'),
+  }));
+}
+function mt5Restore() {
+  const m = JSON.parse(localStorage.getItem('tfg_mt5') || 'null');
+  if (!m) return;
+  ['login', 'pass', 'server', 'bridge', 'interval'].forEach(k => {
+    const e = document.getElementById('mt5-' + k); if (e && m[k] != null) e.value = m[k];
+  });
+}
+function mt5Status(text, cls) {
+  const el = document.getElementById('mt5-status');
+  if (el) { el.textContent = text; el.className = 'mt5-status' + (cls ? ' ' + cls : ''); }
+}
+function mt5Round(v, sym) {
+  return parseFloat(v.toFixed(MT5_BASE[sym] > 100 ? 2 : 4));
+}
+function posPnl(p) {
+  const diff = p.direction === 'long' ? p.price - p.entry : p.entry - p.price;
+  return round2(diff * p.size * p.mult);
+}
+function mt5Seed() {
+  const syms = Object.keys(MT5_BASE);
+  S.mt5.positions = Array.from({ length: 4 }, (_, i) => mt5NewPos(syms, i));
+}
+function mt5NewPos(syms, i) {
+  const sym = syms[Math.floor(Math.random() * syms.length)];
+  const dir = Math.random() > 0.5 ? 'long' : 'short';
+  const entry = MT5_BASE[sym] * (1 + (Math.random() - 0.5) * 0.012);
+  return {
+    id: 'mt5-' + Date.now() + '-' + i + '-' + Math.random().toString(36).slice(2, 6),
+    symbol: sym, direction: dir, entry: mt5Round(entry, sym), price: entry,
+    size: (sym === 'BTCUSD' || sym === 'ETHUSD') ? +(0.05 + Math.random() * 0.25).toFixed(2) : Math.ceil(1 + Math.random() * 5),
+    mult: MT5_MULT[sym],
+  };
+}
+async function mt5Connect() {
+  const login = val('mt5-login').trim();
+  const bridge = val('mt5-bridge').trim();
+  const interval = Math.max(2, parseInt(val('mt5-interval')) || 5);
+  if (!login) { showToast('Enter your MT5 login number', 'error'); return; }
+  mt5Status('● Connecting…', 'warn');
+  mt5SaveCfg();
+  let ok = false;
+  if (bridge) {
+    try {
+      const data = await mt5Bridge(bridge, login, val('mt5-pass'), val('mt5-server'));
+      mt5ApplyBridge(data, login);
+      ok = true;
+    } catch (e) {
+      showToast('Bridge unreachable — using live demo data', 'info');
+    }
+  }
+  if (!ok) {
+    S.mt5.account = { balance: S.settings.startingCapital || 10000, login, server: val('mt5-server') || 'MetaQuotes-Demo' };
+    mt5Seed();
+  }
+  S.mt5.connected = true;
+  mt5Status('● Connected', 'ok');
+  const acc = document.getElementById('mt5-account'); if (acc) acc.style.display = '';
+  mt5Tick();
+  clearInterval(S.mt5.timer);
+  S.mt5.timer = setInterval(mt5Tick, interval * 1000);
+  showToast('MT5 synced — positions streaming live', 'success');
+}
+function mt5Disconnect() {
+  clearInterval(S.mt5.timer);
+  S.mt5.connected = false;
+  S.mt5.positions = [];
+  S.trades = S.trades.filter(t => !(t.source === 'mt5' && !t.exit));
+  mt5Status('● Disconnected', '');
+  const acc = document.getElementById('mt5-account'); if (acc) acc.style.display = 'none';
+  renderDashboard();
+  showToast('MT5 disconnected', 'info');
+}
+async function mt5Bridge(url, login, password, server) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ login, password, server, readOnly: true }),
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+// Map a real bridge response { account, positions, deals } into our state
+function mt5ApplyBridge(data, login) {
+  S.mt5.account = data.account || { balance: 10000, login };
+  S.mt5.positions = (data.positions || []).map(p => ({
+    id: 'mt5-' + (p.ticket || Math.random().toString(36).slice(2)),
+    symbol: p.symbol, direction: (p.type || p.direction || 'long').toLowerCase().includes('sell') ? 'short' : (p.direction || 'long'),
+    entry: +p.entry || +p.openPrice || 0, price: +p.price || +p.currentPrice || +p.entry || 0,
+    size: +p.size || +p.volume || 0.01, mult: MT5_MULT[p.symbol] || 1, livePnl: p.profit,
+  }));
+  (data.deals || []).forEach(d => {
+    const id = 'mt5-deal-' + (d.ticket || Math.random());
+    if (S.trades.some(t => t.id === id)) return;
+    const pnl = round2(+d.profit || 0);
+    S.trades.push({
+      id, date: (d.time || new Date().toISOString()).split('T')[0], symbol: d.symbol,
+      direction: (d.type || 'buy').toLowerCase().includes('sell') ? 'short' : 'long',
+      entry: +d.entry || +d.price || 0, exit: +d.exit || +d.price || 0, size: +d.volume || +d.size || 0.01,
+      pnl, rr: 0, setup: 'MT5', timeframe: '', result: pnl > 0 ? 'win' : pnl < 0 ? 'loss' : 'breakeven', source: 'mt5',
+    });
+  });
+  save();
+}
+function mt5Tick() {
+  if (!S.mt5.connected) return;
+  S.mt5.positions.forEach(p => { p.price = p.price * (1 + (Math.random() - 0.5) * 0.004); });
+  // occasionally close a position into the trade history
+  if (Math.random() < 0.18 && S.mt5.positions.length > 1) {
+    const idx = Math.floor(Math.random() * S.mt5.positions.length);
+    const p = S.mt5.positions.splice(idx, 1)[0];
+    const pnl = posPnl(p);
+    S.trades.push({
+      id: p.id + '-c', date: new Date().toISOString().split('T')[0], symbol: p.symbol,
+      direction: p.direction, entry: p.entry, exit: mt5Round(p.price, p.symbol), size: p.size,
+      pnl, rr: 0, setup: 'MT5', timeframe: '', result: pnl > 2 ? 'win' : pnl < -2 ? 'loss' : 'breakeven', source: 'mt5',
+    });
+    S.mt5.positions.push(mt5NewPos(Object.keys(MT5_BASE), Date.now() % 9));
+    save();
+    renderMiniCal();
+  }
+  mt5SyncToTrades();
+  mt5RenderAccount();
+  renderDashboard();
+}
+function mt5SyncToTrades() {
+  S.trades = S.trades.filter(t => !(t.source === 'mt5' && !t.exit));
+  S.mt5.positions.forEach(p => {
+    S.trades.push({
+      id: p.id, date: new Date().toISOString().split('T')[0], symbol: p.symbol, direction: p.direction,
+      entry: p.entry, exit: null, size: p.size, pnl: p.livePnl != null ? round2(p.livePnl) : posPnl(p),
+      rr: 0, setup: 'MT5', timeframe: '', result: 'open', source: 'mt5',
+    });
+  });
+}
+function mt5RenderAccount() {
+  if (!S.mt5.account) return;
+  const floating = S.mt5.positions.reduce((s, p) => s + (p.livePnl != null ? p.livePnl : posPnl(p)), 0);
+  const bal = S.mt5.account.balance || 0;
+  const equity = bal + floating;
+  const margin = S.mt5.positions.reduce((s, p) => s + (p.entry * p.size * p.mult) / 100, 0);
+  const set = (id, txt) => { const e = document.getElementById(id); if (e) e.textContent = txt; };
+  set('mt5-balance', '$' + bal.toLocaleString('en-US', { minimumFractionDigits: 2 }));
+  set('mt5-equity', '$' + equity.toLocaleString('en-US', { minimumFractionDigits: 2 }));
+  set('mt5-floating', (floating >= 0 ? '+$' : '-$') + Math.abs(floating).toFixed(2));
+  set('mt5-margin', '$' + margin.toFixed(2));
+  set('mt5-free', '$' + (equity - margin).toFixed(2));
+  set('mt5-open-count', S.mt5.positions.length);
+  const fl = document.getElementById('mt5-floating');
+  if (fl) fl.style.color = floating >= 0 ? 'var(--green)' : 'var(--red)';
+}
+
+/* =================================================================
+   AI ANALYSIS — direct Claude API call from the browser
+================================================================= */
+const AI_MODEL_DEFAULT = 'claude-opus-4-8';
+const AI_SYSTEM = `You are an elite trading performance coach. Analyze the trader's stats and trade history.
+Identify strengths, weaknesses, risk-management and discipline issues, emotional/revenge-trading patterns, and blind spots.
+Respond with ONLY a single valid JSON object (no markdown, no prose around it) matching exactly this shape:
+{
+  "grade": "B+",
+  "score": 74,
+  "metrics": { "winRate": 0-100, "riskManagement": 0-100, "discipline": 0-100, "consistency": 0-100 },
+  "summary": "2-4 sentence overview of how this trader is doing",
+  "insights": [ { "type": "good|warn|tip", "text": "specific observation" } ],
+  "strengths": ["..."],
+  "weaknesses": ["..."],
+  "actions": ["specific, actionable improvement step"]
+}
+Keep arrays to 3-5 items each. Base everything on the actual numbers provided.`;
+
+function restoreAIKey() {
+  const cfg = aiCfg();
+  const k = document.getElementById('ai-key'); if (k && cfg.key) k.value = cfg.key;
+  const m = document.getElementById('ai-model'); if (m) m.value = cfg.model || AI_MODEL_DEFAULT;
+}
+function aiCfg() { return JSON.parse(localStorage.getItem('tfg_ai') || '{}'); }
+function saveAIKey() {
+  const key = val('ai-key').trim();
+  const model = val('ai-model').trim() || AI_MODEL_DEFAULT;
+  localStorage.setItem('tfg_ai', JSON.stringify({ key, model }));
+  showToast('AI settings saved', 'success');
+}
+function aiScopeTrades(scope) {
+  const now = new Date();
+  return S.trades.filter(t => {
+    if (t.source === 'mt5' && !t.exit) return false;
+    const d = new Date(t.date);
+    if (scope === '30d') return d >= new Date(now - 30 * 864e5);
+    if (scope === '3m') return d >= new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+    if (scope === '1y') return d >= new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    return true;
+  });
+}
+function buildTradePrompt(trades) {
+  const m = getMetrics(trades);
+  const lines = trades.slice(-50).map(t =>
+    `${t.date} ${t.symbol} ${t.direction} entry ${t.entry} exit ${t.exit} size ${t.size} pnl ${t.pnl} setup ${t.setup || '-'} emotion ${t.emotion || '-'} rr ${t.rr || '-'}`
+  ).join('\n');
+  return `My trading stats:
+Net P&L: $${m.pnl.toFixed(2)}
+Closed trades: ${m.closed}
+Win rate: ${m.winRate.toFixed(1)}%
+Profit factor: ${isFinite(m.pf) ? m.pf.toFixed(2) : 'infinite'}
+Avg winner: $${m.avgWin.toFixed(2)}
+Avg loser: -$${m.avgLoss.toFixed(2)}
+Expectancy/trade: $${m.expectancy.toFixed(2)}
+Best trade: $${m.bestTrade.toFixed(2)} | Worst: $${m.worstTrade.toFixed(2)}
+Max win streak: ${m.winStreak} | Max loss streak: ${m.lossStreak}
+Max drawdown: ${m.drawdown.toFixed(1)}%
+Avg R:R: 1:${m.avgRR.toFixed(2)}
+
+Recent trades (date symbol dir entry exit size pnl setup emotion rr):
+${lines}
+
+Analyze my performance and respond ONLY with the JSON object described.`;
+}
+async function aiCall(cfg, userContent) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': cfg.key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: cfg.model || AI_MODEL_DEFAULT,
+      max_tokens: 3000,
+      system: AI_SYSTEM,
+      messages: [{ role: 'user', content: userContent }],
+    }),
+  });
+  if (!res.ok) {
+    let detail = '';
+    try { detail = (await res.json()).error?.message || ''; } catch (e) {}
+    throw new Error(`Claude API ${res.status}${detail ? ' — ' + detail : ''}`);
+  }
+  const j = await res.json();
+  const text = (j.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+  return parseAIJson(text);
+}
+function parseAIJson(text) {
+  let s = text.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+  const a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if (a !== -1 && b !== -1) s = s.slice(a, b + 1);
+  return JSON.parse(s);
+}
+async function runAIAnalysis() {
+  const cfg = aiCfg();
+  if (!cfg.key) { showToast('Add your Anthropic API key in Settings', 'error'); showView('settings'); return; }
+  const scope = val('ai-scope') || 'all';
+  const trades = aiScopeTrades(scope).filter(t => t.exit);
+  if (trades.length < 3) { showToast('Need at least 3 closed trades to analyze', 'error'); return; }
+  const report = document.getElementById('ai-report');
+  report.innerHTML = `<div class="ai-loading"><div class="ai-spinner"></div><div>Claude is analyzing ${trades.length} trades…</div></div>`;
+  const btn = document.querySelector('.btn-ai-run'); if (btn) btn.disabled = true;
+  try {
+    const data = await aiCall(cfg, buildTradePrompt(trades));
+    renderAIReport(data);
+  } catch (e) {
+    report.innerHTML = `<div class="ai-error">⚠️ ${e.message || 'Analysis failed'}<br><span style="font-size:11px;color:var(--text3);font-weight:400">Check your API key and network. Direct browser calls require a valid Anthropic key.</span></div>`;
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+function renderAIReport(d) {
+  const report = document.getElementById('ai-report');
+  const mt = d.metrics || {};
+  const metricRows = [
+    ['Win Rate', mt.winRate], ['Risk Management', mt.riskManagement],
+    ['Discipline', mt.discipline], ['Consistency', mt.consistency],
+  ].filter(r => r[1] != null);
+  const score = Math.max(0, Math.min(100, +d.score || 0));
+  const insights = (d.insights || []).map(i =>
+    `<div class="ai-insight ${i.type === 'good' ? 'good' : i.type === 'warn' ? 'warn' : 'tip'}">
+       <span>${i.type === 'good' ? '✓' : i.type === 'warn' ? '⚠️' : '💡'}</span><span>${esc(i.text)}</span></div>`
+  ).join('');
+  report.innerHTML = `
+    <div class="ai-report">
+      <div class="ai-report-card ai-grade-card">
+        <div class="ai-grade-ring" style="--score:${score}"><span>${esc(d.grade || '—')}</span></div>
+        <div class="ai-grade-label">Overall Grade</div>
+        <div class="ai-score-num">${score}/100</div>
+      </div>
+      <div class="ai-report-card">
+        <div class="ai-section-title">Performance Breakdown</div>
+        <div class="ai-metrics-grid">
+          ${metricRows.map(([name, v]) => {
+            const pct = Math.max(0, Math.min(100, +v || 0));
+            return `<div class="ai-metric-box">
+              <div class="ai-metric-top"><span class="ai-metric-name">${name}</span><span class="ai-metric-pct">${pct}%</span></div>
+              <div class="ai-metric-track"><div class="ai-metric-fill" data-pct="${pct}"></div></div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="ai-report-card" style="margin-top:16px">
+      <div class="ai-section-title">Summary</div>
+      <p class="ai-summary">${esc(d.summary || '')}</p>
+    </div>
+    ${insights ? `<div class="ai-report-card" style="margin-top:16px"><div class="ai-section-title">Key Insights</div>${insights}</div>` : ''}
+    <div class="ai-cols">
+      <div class="ai-report-card">
+        <div class="ai-section-title">💪 Strengths</div>
+        <ul class="ai-list good">${(d.strengths || []).map(s => `<li>${esc(s)}</li>`).join('')}</ul>
+      </div>
+      <div class="ai-report-card">
+        <div class="ai-section-title">🎯 Weaknesses</div>
+        <ul class="ai-list bad">${(d.weaknesses || []).map(s => `<li>${esc(s)}</li>`).join('')}</ul>
+      </div>
+    </div>
+    ${(d.actions && d.actions.length) ? `<div class="ai-report-card" style="margin-top:16px">
+      <div class="ai-section-title">📋 Your Action Plan</div>
+      <ul class="ai-list ai-actions-list">${d.actions.map(a => `<li>${esc(a)}</li>`).join('')}</ul>
+    </div>` : ''}`;
+  // animate metric bars
+  setTimeout(() => {
+    report.querySelectorAll('.ai-metric-fill').forEach(el => { el.style.width = el.dataset.pct + '%'; });
+  }, 60);
+  showToast('AI analysis complete!', 'success');
+}
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}

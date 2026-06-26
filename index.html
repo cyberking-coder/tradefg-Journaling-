@@ -600,6 +600,7 @@
           <div class="sb-sub-items" id="group-analysis">
             <a class="sb-sub" onclick="showView('performance')" data-view="performance">Performance</a>
             <a class="sb-sub" onclick="showView('trade-analysis')" data-view="trade-analysis">Trade Analysis</a>
+            <a class="sb-sub" onclick="showView('ai-analysis')" data-view="ai-analysis">AI Analysis <span class="badge-new xs">AI</span></a>
           </div>
         </div>
         <a class="sb-item" onclick="showView('market')" data-view="market">
@@ -909,6 +910,33 @@
           </div>
         </div>
 
+        <!-- ── AI ANALYSIS ── -->
+        <div id="view-ai-analysis" class="view">
+          <div class="analysis-header">
+            <h2>AI Trade Analysis <span class="ai-pill">✨ Powered by Claude</span></h2>
+            <p>Let Claude analyze your entire trade history — grade, blind spots, and an action plan</p>
+          </div>
+          <div class="ai-toolbar">
+            <div class="ai-tool-left">
+              <span>ANALYZE:</span>
+              <select id="ai-scope" class="ai-select">
+                <option value="all">All Time</option>
+                <option value="30d">Last 30 Days</option>
+                <option value="3m">Last 3 Months</option>
+                <option value="1y">Last Year</option>
+              </select>
+            </div>
+            <button class="btn-ai-run" onclick="runAIAnalysis()">🤖 Analyze My Trades</button>
+          </div>
+          <div id="ai-report" class="ai-report-wrap">
+            <div class="ai-empty">
+              <span>🤖</span>
+              <h3>No analysis yet</h3>
+              <p>Add your Anthropic API key in <a onclick="showView('settings')" class="ai-link">Settings</a>, then run an analysis to get a personalized performance breakdown.</p>
+            </div>
+          </div>
+        </div>
+
         <!-- ── MARKET ── -->
         <div id="view-market" class="view">
           <div class="market-grid">
@@ -956,6 +984,36 @@
               <div class="sett-row"><label>Default R:R Target</label><input class="sett-input" type="number" value="2" step="0.1" id="s-rr" /></div>
               <button class="tb-btn primary">Save Risk Settings</button>
             </div>
+            <div class="settings-section mt5-card">
+              <h3>MT5 Account Sync <span class="mt5-status" id="mt5-status">● Disconnected</span></h3>
+              <div class="sett-row"><label>Login</label><input class="sett-input" id="mt5-login" placeholder="e.g. 51234567" /></div>
+              <div class="sett-row"><label>Investor Password</label><input class="sett-input" id="mt5-pass" type="password" placeholder="read-only password" /></div>
+              <div class="sett-row"><label>Server</label><input class="sett-input" id="mt5-server" placeholder="e.g. MetaQuotes-Demo" /></div>
+              <div class="sett-row"><label>Bridge API URL</label><input class="sett-input" id="mt5-bridge" placeholder="https://your-mt5-bridge/api  (blank = demo)" /></div>
+              <div class="sett-row"><label>Sync Interval (sec)</label><input class="sett-input" id="mt5-interval" type="number" min="2" value="5" /></div>
+              <div class="sett-actions">
+                <button class="tb-btn primary" id="mt5-connect-btn" onclick="mt5Connect()">🔌 Connect &amp; Sync</button>
+                <button class="tb-btn" onclick="mt5Disconnect()">Disconnect</button>
+              </div>
+              <div class="mt5-account" id="mt5-account" style="display:none">
+                <div class="mt5-stat"><span>BALANCE</span><strong id="mt5-balance">$0.00</strong></div>
+                <div class="mt5-stat"><span>EQUITY</span><strong id="mt5-equity">$0.00</strong></div>
+                <div class="mt5-stat"><span>OPEN P&amp;L</span><strong id="mt5-floating">$0.00</strong></div>
+                <div class="mt5-stat"><span>MARGIN</span><strong id="mt5-margin">$0.00</strong></div>
+                <div class="mt5-stat"><span>FREE MARGIN</span><strong id="mt5-free">$0.00</strong></div>
+                <div class="mt5-stat"><span>OPEN POSITIONS</span><strong id="mt5-open-count">0</strong></div>
+              </div>
+              <p class="mt5-note">🔒 The investor password is <strong>read-only</strong> — it can never place or modify trades. Real accounts need a read-only bridge endpoint (e.g. MetaApi); browsers can't speak the MT5 protocol directly. Leave Bridge URL blank to preview with live demo data that streams in real time.</p>
+            </div>
+
+            <div class="settings-section">
+              <h3>AI Analysis (Claude)</h3>
+              <div class="sett-row"><label>Anthropic API Key</label><input class="sett-input" id="ai-key" type="password" placeholder="sk-ant-..." /></div>
+              <div class="sett-row"><label>Model</label><input class="sett-input" id="ai-model" value="claude-opus-4-8" /></div>
+              <button class="tb-btn primary" onclick="saveAIKey()">Save AI Settings</button>
+              <p class="mt5-note">🔑 Your key is stored only in this browser (localStorage) and sent directly to Anthropic's API — it never touches TradeFG servers. Get a key at console.anthropic.com.</p>
+            </div>
+
             <div class="settings-section danger">
               <h3>Data</h3>
               <div class="sett-actions">
