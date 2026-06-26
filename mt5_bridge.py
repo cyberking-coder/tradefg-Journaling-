@@ -57,6 +57,61 @@ def _session(hour):
     return "Asia"
 
 
+def _init_login(account, password, server, path=None):
+    """
+    Initialize MT5 and log into the account.
+
+    Returns (ok, error_message). When path is given, attaches to THAT broker's
+    terminal (required for prop firms like Funding Pips that ship a custom
+    MT5 build — the generic auto-launched terminal won't have their server).
+    """
+    # make sure any previous session is closed first
+    try:
+        mt5.shutdown()
+    except Exception:
+        pass
+
+    # initialize() with login params does init + login in one reliable step
+    kwargs = dict(login=account, password=password, server=server, timeout=60000)
+    if path:
+        kwargs["path"] = path
+
+    if not mt5.initialize(**kwargs):
+        err = mt5.last_error()
+        return False, f"initialize/login failed (code {err[0]}): {err[1]}"
+
+    # verify we are actually logged into the requested account
+    info = mt5.account_info()
+    if info is None:
+        err = mt5.last_error()
+        mt5.shutdown()
+        return False, f"connected but account_info() is empty (code {err[0]}): {err[1]}"
+
+    if int(info.login) != int(account):
+        actual = info.login
+        mt5.shutdown()
+        return False, (
+            f"terminal is logged into account {actual}, not {account}. "
+            f"Open your broker's MT5 terminal, log into {account}, and pass its "
+            f"terminal64.exe path."
+        )
+
+    return True, None
+
+
+def _account_dict(info):
+    return {
+        "login": info.login,
+        "name": info.name,
+        "balance": info.balance,
+        "equity": info.equity,
+        "currency": info.currency,
+        "leverage": info.leverage,
+        "server": info.server,
+        "company": info.company,
+    }
+
+
 # ── /api/mt5/connect ────────────────────────────────────────────────────────
 # POST body: { "account": 12345678, "password": "...", "server": "Broker-Demo" }
 # Returns:   { "account": {...}, "deals": [...], "positions": [...] }
@@ -69,31 +124,17 @@ def connect():
     account = int(body.get("account", 0))
     password = body.get("password", "")
     server = body.get("server", "")
+    path = body.get("path") or None
 
     if not account:
         return jsonify({"error": "account number is required"}), 400
 
-    if not mt5.initialize():
-        err = mt5.last_error()
-        return jsonify({"error": f"MT5 terminal not running or could not initialize: {err[1]}"}), 503
-
-    ok = mt5.login(account, password=password, server=server)
+    ok, err = _init_login(account, password, server, path)
     if not ok:
-        err = mt5.last_error()
-        mt5.shutdown()
-        return jsonify({"error": f"Login failed: {err[1]}"}), 401
+        return jsonify({"error": err}), 401
 
     info = mt5.account_info()
-    acc = {
-        "login": info.login,
-        "name": info.name,
-        "balance": info.balance,
-        "equity": info.equity,
-        "currency": info.currency,
-        "leverage": info.leverage,
-        "server": info.server,
-        "company": info.company,
-    }
+    acc = _account_dict(info)
 
     # Closed deals — last 30 days, OUT entries only (completed trades)
     from_dt = datetime.datetime.now() - datetime.timedelta(days=30)
@@ -150,20 +191,15 @@ def trades():
     account = int(body.get("account", 0))
     password = body.get("password", "")
     server = body.get("server", "")
+    path = body.get("path") or None
     days = int(body.get("days", 90))
 
     if not account:
         return jsonify({"error": "account number is required"}), 400
 
-    if not mt5.initialize():
-        err = mt5.last_error()
-        return jsonify({"error": f"MT5 terminal not running: {err[1]}"}), 503
-
-    ok = mt5.login(account, password=password, server=server)
+    ok, err = _init_login(account, password, server, path)
     if not ok:
-        err = mt5.last_error()
-        mt5.shutdown()
-        return jsonify({"error": f"Login failed: {err[1]}"}), 401
+        return jsonify({"error": err}), 401
 
     from_dt = datetime.datetime.now() - datetime.timedelta(days=days)
     raw_deals = mt5.history_deals_get(from_dt, datetime.datetime.now()) or []
@@ -204,6 +240,11 @@ if __name__ == "__main__":
     print()
     print("  In the TradeFG MT5 modal, set Bridge URL to:")
     print("    http://localhost:5001/api/mt5/connect")
+    print()
+    print("  PROP FIRMS (Funding Pips, FTMO, etc.): you MUST also set the")
+    print("  Terminal Path field to your broker's terminal64.exe, e.g.")
+    print(r"    C:\Program Files\FundingPips MetaTrader 5\terminal64.exe")
+    print("  Otherwise a generic terminal launches without your broker's server.")
     print()
     print("  MT5 package available:", MT5_AVAILABLE)
     print("=" * 60)

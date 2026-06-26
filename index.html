@@ -1145,7 +1145,9 @@
         <div class="fg"><label>Broker Server *</label><input class="fi" id="mt5m-server" placeholder="e.g. ICMarkets-Demo" /></div>
         <div class="fg"><label>Broker Name <em style="color:var(--text3);font-style:normal">(optional)</em></label><input class="fi" id="mt5m-broker" placeholder="e.g. IC Markets" /></div>
         <div class="fg" style="grid-column:1/-1"><label>Bridge URL <em style="color:var(--text3);font-style:normal">(optional — leave blank for demo data)</em></label><input class="fi" id="mt5m-bridge" placeholder="http://localhost:5001/api/mt5/connect" /></div>
+        <div class="fg" style="grid-column:1/-1"><label>Terminal Path <em style="color:var(--text3);font-style:normal">(prop firms only — path to your broker's terminal64.exe)</em></label><input class="fi" id="mt5m-path" placeholder="C:\Program Files\FundingPips MetaTrader 5\terminal64.exe" /></div>
       </div>
+      <div id="mt5-form-error" class="mt5-form-error" style="display:none"></div>
       <p class="mt5-form-note">🔒 The investor password is <strong>read-only by design</strong> — the MT5 server physically <strong>cannot execute, modify, or close</strong> any trade when authenticated with it. Credentials are stored only in your browser's localStorage and never leave your device.</p>
     </div>
 

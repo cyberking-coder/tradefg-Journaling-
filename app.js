@@ -1486,7 +1486,10 @@ function openMT5Modal() {
     if (saved.server)  el('mt5m-server').value  = saved.server;
     if (saved.broker)  el('mt5m-broker').value  = saved.broker;
     if (saved.bridge)  el('mt5m-bridge').value  = saved.bridge;
+    if (saved.path)    el('mt5m-path').value    = saved.path;
   }
+  const errEl = document.getElementById('mt5-form-error');
+  if (errEl) errEl.style.display = 'none';
   if (S.mt5modal.connected && S.mt5modal.account) {
     mt5ModalShowDash();
     // re-render dashboard (charts are destroyed when modal closes)
@@ -1549,20 +1552,31 @@ async function mt5ModalConnect() {
   const server  = document.getElementById('mt5m-server').value.trim();
   const broker  = document.getElementById('mt5m-broker').value.trim();
   const bridge  = document.getElementById('mt5m-bridge').value.trim();
+  const path    = document.getElementById('mt5m-path').value.trim();
 
   if (!account) { showToast('Enter your account number', 'error'); return; }
   if (!pass)    { showToast('Enter your investor password', 'error'); return; }
   if (!server)  { showToast('Enter the broker server name', 'error'); return; }
 
-  localStorage.setItem('tfg_mt5_modal', JSON.stringify({ account, pass, server, broker, bridge }));
-  S.mt5modal.creds = { account, pass, server, broker, bridge };
+  localStorage.setItem('tfg_mt5_modal', JSON.stringify({ account, pass, server, broker, bridge, path }));
+  S.mt5modal.creds = { account, pass, server, broker, bridge, path };
 
   mt5ModalShowLoading();
   await mt5ModalRunSteps();
 }
 
+// Show an error inside the form (instead of silently falling back to demo)
+function mt5ShowFormError(msg) {
+  mt5ModalShowForm();
+  const errEl = document.getElementById('mt5-form-error');
+  if (errEl) {
+    errEl.style.display = '';
+    errEl.innerHTML = '⚠️ ' + esc(msg);
+  }
+}
+
 async function mt5ModalRunSteps() {
-  const { account, pass, server, bridge } = S.mt5modal.creds;
+  const { account, pass, server, bridge, path } = S.mt5modal.creds;
   const stepDot = (i, state) => {
     const d = document.getElementById('mt5s-' + i);
     d.className = 'mt5-step-dot ' + state;
@@ -1572,43 +1586,63 @@ async function mt5ModalRunSteps() {
   const wait = ms => new Promise(r => setTimeout(r, ms));
 
   stepDot(1, 'pending');
-  await wait(700);
+  await wait(500);
   stepDot(1, 'done');
 
   stepDot(2, 'pending');
-  await wait(600);
+  await wait(400);
+
+  // ── No bridge URL → explicit demo mode ──
+  if (!bridge) {
+    stepDot(2, 'done');
+    stepDot(3, 'pending'); await wait(400); stepDot(3, 'done');
+    stepDot(4, 'pending');
+    mt5ModalSeedDemo(account, server);
+    S.mt5modal.isDemo = true;
+    await wait(400); stepDot(4, 'done'); await wait(200);
+    mt5ModalFinishConnect(account, 'Connected in demo mode — add a Bridge URL for live data', 'info');
+    return;
+  }
+
+  // ── Bridge URL present → real connection, errors are surfaced ──
+  let data = null, errMsg = null;
+  try {
+    const res = await fetch(bridge, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account, password: pass, server, path }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (res.ok && !json.error) {
+      data = json;
+    } else {
+      errMsg = json.error || ('Bridge returned HTTP ' + res.status);
+    }
+  } catch(e) {
+    errMsg = 'Could not reach the bridge at ' + bridge +
+      '. Make sure mt5_bridge.py is running (python mt5_bridge.py) and the URL is correct.';
+  }
   stepDot(2, 'done');
 
   stepDot(3, 'pending');
-  let data = null;
-  if (bridge) {
-    try {
-      const res = await fetch(bridge, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ account, password: pass, server }),
-      });
-      if (res.ok) data = await res.json();
-      else showToast('Bridge responded with error — using demo data', 'info');
-    } catch(e) {
-      showToast('Bridge unreachable — using demo data', 'info');
-    }
+  await wait(400);
+  if (errMsg) {
+    mt5ShowFormError(errMsg);
+    showToast('MT5 connection failed', 'error');
+    return;
   }
-  await wait(500);
   stepDot(3, 'done');
 
   stepDot(4, 'pending');
-  if (data) {
-    mt5ModalApplyBridge(data, account);
-    S.mt5modal.isDemo = false;
-  } else {
-    mt5ModalSeedDemo(account, server);
-    S.mt5modal.isDemo = true;
-  }
-  await wait(500);
+  mt5ModalApplyBridge(data, account);
+  S.mt5modal.isDemo = false;
+  await wait(400);
   stepDot(4, 'done');
-  await wait(300);
+  await wait(200);
+  mt5ModalFinishConnect(account, `Connected to account #${account} — live data active`, 'success');
+}
 
+function mt5ModalFinishConnect(account, msg, type) {
   S.mt5modal.connected = true;
   S.mt5modal.syncTs = Date.now();
   mt5ModalCacheData();
@@ -1616,10 +1650,7 @@ async function mt5ModalRunSteps() {
   mt5ModalShowDash();
   mt5ModalRenderDashboard();
   mt5ModalStartRefresh();
-  const toastMsg = S.mt5modal.isDemo
-    ? 'Connected in demo mode — set a Bridge URL for live data'
-    : `Connected to account #${account} — live data active`;
-  showToast(toastMsg, S.mt5modal.isDemo ? 'info' : 'success');
+  showToast(msg, type);
 }
 
 function mt5ModalApplyBridge(data, login) {
@@ -1702,7 +1733,7 @@ function mt5ModalDisconnect() {
 
 // Manual refresh button — shows toast on success/fail
 async function mt5ModalRefresh() {
-  const { account, pass, server, bridge } = S.mt5modal.creds || {};
+  const { account, pass, server, bridge, path } = S.mt5modal.creds || {};
   if (!bridge || S.mt5modal.isDemo) {
     mt5ModalSeedDemo(account || '', server || '');
     S.mt5modal.syncTs = Date.now();
@@ -1716,17 +1747,18 @@ async function mt5ModalRefresh() {
     const res = await fetch(bridge, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ account, password: pass, server }),
+      body: JSON.stringify({ account, password: pass, server, path }),
     });
-    if (res.ok) {
-      mt5ModalApplyBridge(await res.json(), account);
+    const json = await res.json().catch(() => ({}));
+    if (res.ok && !json.error) {
+      mt5ModalApplyBridge(json, account);
       S.mt5modal.syncTs = Date.now();
       mt5ModalCacheData();
       mt5ModalRenderDashboard();
       mt5UpdateTopbarPill();
       showToast('Account data refreshed', 'success');
     } else {
-      showToast('Refresh failed — bridge returned error', 'error');
+      showToast('Refresh failed: ' + (json.error || 'bridge error'), 'error');
       mt5UpdateTopbarPill(true);
     }
   } catch(e) {
@@ -1738,7 +1770,7 @@ async function mt5ModalRefresh() {
 // Silent background refresh — no toast, keeps showing last data on failure
 async function mt5ModalRefreshSilent() {
   if (!S.mt5modal.creds) return;
-  const { account, pass, server, bridge } = S.mt5modal.creds;
+  const { account, pass, server, bridge, path } = S.mt5modal.creds;
   if (!bridge || S.mt5modal.isDemo) {
     if (!S.mt5modal.account) mt5ModalSeedDemo(account, server);
     S.mt5modal.syncTs = Date.now();
@@ -1752,10 +1784,11 @@ async function mt5ModalRefreshSilent() {
     const res = await fetch(bridge, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ account, password: pass, server }),
+      body: JSON.stringify({ account, password: pass, server, path }),
     });
-    if (res.ok) {
-      mt5ModalApplyBridge(await res.json(), account);
+    const json = await res.json().catch(() => ({}));
+    if (res.ok && !json.error) {
+      mt5ModalApplyBridge(json, account);
       S.mt5modal.syncTs = Date.now();
       mt5ModalCacheData();
       mt5UpdateTopbarPill(false);
