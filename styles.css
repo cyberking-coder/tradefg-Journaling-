@@ -798,6 +798,14 @@ body.light .sidebar{background:var(--bg1)}
 @media(max-width:900px){.ai-report{grid-template-columns:1fr}.ai-cols{grid-template-columns:1fr}.mt5-account{grid-template-columns:1fr 1fr}}
 
 /* =================================================================
+   MT5 TOPBAR LIVE PILL
+================================================================= */
+.mt5-topbar-pill{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border2);border-radius:100px;padding:5px 12px 5px 8px;cursor:pointer;transition:background .15s;font-size:12px;font-weight:700;color:var(--text1);user-select:none}
+.mt5-topbar-pill:hover{background:var(--bg-hover)}
+.mt5-pill-divider{color:var(--border2);font-size:10px}
+#mt5-pill-sync{font-size:10px;color:var(--green);font-weight:700;letter-spacing:.2px}
+
+/* =================================================================
    + DROPDOWN MENU
 ================================================================= */
 .topbar-add-wrap{position:relative;display:inline-block}
@@ -838,6 +846,7 @@ body.light .sidebar{background:var(--bg1)}
 .mt5-dash-accinfo{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);font-weight:600;flex-wrap:wrap}
 .mt5-live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulseLive 1.4s infinite;flex-shrink:0}
 .mt5-sep{color:var(--border2)}
+.mt5-demo-badge{font-size:9px;font-weight:800;padding:2px 7px;border-radius:100px;background:rgba(245,158,11,0.15);color:var(--orange);border:1px solid rgba(245,158,11,0.3);letter-spacing:.5px}
 .mt5-dash-actions{display:flex;align-items:center;gap:8px}
 .mt5-lastsync-txt{font-size:11px;color:var(--text3);font-weight:600}
 

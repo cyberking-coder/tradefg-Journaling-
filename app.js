@@ -1469,10 +1469,12 @@ function closeAddMenu() {
 S.mt5modal = {
   connected: false,
   timer: null,
+  syncTimer: null,
   account: null,
   deals: [],
   syncTs: null,
   creds: null,
+  isDemo: false,
 };
 
 function openMT5Modal() {
@@ -1485,8 +1487,10 @@ function openMT5Modal() {
     if (saved.broker)  el('mt5m-broker').value  = saved.broker;
     if (saved.bridge)  el('mt5m-bridge').value  = saved.bridge;
   }
-  if (S.mt5modal.connected) {
+  if (S.mt5modal.connected && S.mt5modal.account) {
     mt5ModalShowDash();
+    // re-render dashboard (charts are destroyed when modal closes)
+    mt5ModalRenderDashboard();
   } else {
     mt5ModalShowForm();
   }
@@ -1495,6 +1499,10 @@ function openMT5Modal() {
 
 function closeMT5Modal() {
   document.getElementById('mt5-modal').classList.remove('active');
+  // destroy charts on close so they redraw correctly next open
+  ['mt5Equity','mt5Symbol','mt5Session'].forEach(k => {
+    if (S.charts[k]) { S.charts[k].destroy(); delete S.charts[k]; }
+  });
 }
 
 function mt5BackdropClose(e) {
@@ -1592,8 +1600,10 @@ async function mt5ModalRunSteps() {
   stepDot(4, 'pending');
   if (data) {
     mt5ModalApplyBridge(data, account);
+    S.mt5modal.isDemo = false;
   } else {
     mt5ModalSeedDemo(account, server);
+    S.mt5modal.isDemo = true;
   }
   await wait(500);
   stepDot(4, 'done');
@@ -1601,10 +1611,15 @@ async function mt5ModalRunSteps() {
 
   S.mt5modal.connected = true;
   S.mt5modal.syncTs = Date.now();
+  mt5ModalCacheData();
+  mt5UpdateTopbarPill();
   mt5ModalShowDash();
   mt5ModalRenderDashboard();
   mt5ModalStartRefresh();
-  showToast('MT5 dashboard ready', 'success');
+  const toastMsg = S.mt5modal.isDemo
+    ? 'Connected in demo mode — set a Bridge URL for live data'
+    : `Connected to account #${account} — live data active`;
+  showToast(toastMsg, S.mt5modal.isDemo ? 'info' : 'success');
 }
 
 function mt5ModalApplyBridge(data, login) {
@@ -1664,29 +1679,36 @@ function mt5ModalSeedDemo(login, server) {
     server: server || 'MetaQuotes-Demo',
   };
   S.mt5modal.deals = deals;
+  S.mt5modal.isDemo = true;
 }
 
 function mt5ModalDisconnect() {
   clearInterval(S.mt5modal.timer);
+  clearInterval(S.mt5modal.syncTimer);
   S.mt5modal.connected = false;
   S.mt5modal.deals = [];
   S.mt5modal.account = null;
   S.mt5modal.syncTs = null;
-  // destroy charts
+  S.mt5modal.isDemo = false;
+  localStorage.removeItem('tfg_mt5_modal');
+  localStorage.removeItem('tfg_mt5_data');
   ['mt5Equity','mt5Symbol','mt5Session'].forEach(k => {
     if (S.charts[k]) { S.charts[k].destroy(); delete S.charts[k]; }
   });
+  mt5UpdateTopbarPill();
   mt5ModalShowForm();
   showToast('MT5 disconnected', 'info');
 }
 
+// Manual refresh button — shows toast on success/fail
 async function mt5ModalRefresh() {
   const { account, pass, server, bridge } = S.mt5modal.creds || {};
-  if (!bridge) {
-    // re-seed with updated demo data
+  if (!bridge || S.mt5modal.isDemo) {
     mt5ModalSeedDemo(account || '', server || '');
     S.mt5modal.syncTs = Date.now();
+    mt5ModalCacheData();
     mt5ModalRenderDashboard();
+    mt5UpdateTopbarPill();
     showToast('Demo data refreshed', 'info');
     return;
   }
@@ -1699,19 +1721,95 @@ async function mt5ModalRefresh() {
     if (res.ok) {
       mt5ModalApplyBridge(await res.json(), account);
       S.mt5modal.syncTs = Date.now();
+      mt5ModalCacheData();
       mt5ModalRenderDashboard();
-      showToast('Data refreshed', 'success');
+      mt5UpdateTopbarPill();
+      showToast('Account data refreshed', 'success');
+    } else {
+      showToast('Refresh failed — bridge returned error', 'error');
+      mt5UpdateTopbarPill(true);
     }
   } catch(e) {
-    showToast('Refresh failed', 'error');
+    showToast('Bridge unreachable — showing last known data', 'error');
+    mt5UpdateTopbarPill(true);
+  }
+}
+
+// Silent background refresh — no toast, keeps showing last data on failure
+async function mt5ModalRefreshSilent() {
+  if (!S.mt5modal.creds) return;
+  const { account, pass, server, bridge } = S.mt5modal.creds;
+  if (!bridge || S.mt5modal.isDemo) {
+    if (!S.mt5modal.account) mt5ModalSeedDemo(account, server);
+    S.mt5modal.syncTs = Date.now();
+    mt5ModalCacheData();
+    mt5UpdateTopbarPill();
+    if (document.getElementById('mt5-modal').classList.contains('active') && S.mt5modal.connected)
+      mt5ModalRenderDashboard();
+    return;
+  }
+  try {
+    const res = await fetch(bridge, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account, password: pass, server }),
+    });
+    if (res.ok) {
+      mt5ModalApplyBridge(await res.json(), account);
+      S.mt5modal.syncTs = Date.now();
+      mt5ModalCacheData();
+      mt5UpdateTopbarPill(false);
+      if (document.getElementById('mt5-modal').classList.contains('active') && S.mt5modal.connected)
+        mt5ModalRenderDashboard();
+    } else {
+      mt5UpdateTopbarPill(true);
+    }
+  } catch(e) {
+    mt5UpdateTopbarPill(true);
   }
 }
 
 function mt5ModalStartRefresh() {
   clearInterval(S.mt5modal.timer);
+  // 60-second live data refresh
   S.mt5modal.timer = setInterval(() => {
-    if (S.mt5modal.connected) mt5ModalRefresh();
+    if (S.mt5modal.connected) mt5ModalRefreshSilent();
   }, 60000);
+  // 1-second ticker for "last synced" display
+  clearInterval(S.mt5modal.syncTimer);
+  S.mt5modal.syncTimer = setInterval(() => {
+    if (!S.mt5modal.syncTs) return;
+    const sec = Math.round((Date.now() - S.mt5modal.syncTs) / 1000);
+    const txt = sec < 10 ? 'Live' : sec < 60 ? `${sec}s ago` : `${Math.floor(sec / 60)}m ago`;
+    const pillSync = document.getElementById('mt5-pill-sync');
+    if (pillSync) pillSync.textContent = txt;
+    const modalSync = document.getElementById('mt5-lastsync');
+    if (modalSync) modalSync.textContent = sec < 10 ? 'Synced just now' : `Synced ${txt}`;
+  }, 1000);
+}
+
+// Persist fetched data to localStorage so page refresh restores instantly
+function mt5ModalCacheData() {
+  if (!S.mt5modal.account) return;
+  localStorage.setItem('tfg_mt5_data', JSON.stringify({
+    account: S.mt5modal.account,
+    deals: S.mt5modal.deals,
+    syncTs: S.mt5modal.syncTs,
+    isDemo: S.mt5modal.isDemo,
+  }));
+}
+
+// Update topbar live pill
+function mt5UpdateTopbarPill(stale = false) {
+  const pill = document.getElementById('mt5-topbar-pill');
+  if (!pill) return;
+  if (!S.mt5modal.connected || !S.mt5modal.account) { pill.style.display = 'none'; return; }
+  pill.style.display = 'flex';
+  const acc = S.mt5modal.account;
+  const accEl = document.getElementById('mt5-pill-acc');
+  if (accEl) accEl.textContent = '#' + acc.login + (S.mt5modal.isDemo ? ' · DEMO' : '');
+  const dot = document.getElementById('mt5-pill-dot');
+  if (dot) dot.style.background = stale ? 'var(--orange)' : 'var(--green)';
 }
 
 // ── Render dashboard ─────────────────────────────────────────────
@@ -1725,6 +1823,8 @@ function mt5ModalRenderDashboard() {
   set('mt5d-server',   acc ? acc.server : '—');
   set('mt5d-currency', acc ? acc.currency : 'USD');
   set('mt5d-leverage', acc ? acc.leverage : '—');
+  const demoBadge = document.getElementById('mt5-demo-badge');
+  if (demoBadge) demoBadge.style.display = S.mt5modal.isDemo ? '' : 'none';
 
   // last sync
   if (S.mt5modal.syncTs) {
@@ -1884,29 +1984,34 @@ function mt5RenderTradesTable(deals) {
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">No closed trades found</td></tr>';
 }
 
-// Restore MT5 modal connection on page load
+// ── Restore MT5 connection on page load ──────────────────────────
+// Strategy: load cached data instantly so the pill shows up immediately,
+// then fire a background refresh to get fresh data from the bridge.
 (function mt5ModalRestore() {
   const saved = JSON.parse(localStorage.getItem('tfg_mt5_modal') || 'null');
   if (!saved || !saved.account) return;
   S.mt5modal.creds = saved;
-  // auto-reconnect silently in background
-  (async () => {
-    const { account, pass, server, bridge } = saved;
-    let data = null;
-    if (bridge) {
-      try {
-        const res = await fetch(bridge, {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ account, password: pass, server }),
-        });
-        if (res.ok) data = await res.json();
-      } catch(e) {}
-    }
-    if (data) mt5ModalApplyBridge(data, account);
-    else mt5ModalSeedDemo(account, server);
+
+  // Step 1: load last-known data from cache so UI appears instantly
+  const cached = JSON.parse(localStorage.getItem('tfg_mt5_data') || 'null');
+  if (cached && cached.account) {
+    S.mt5modal.account = cached.account;
+    S.mt5modal.deals   = cached.deals || [];
+    S.mt5modal.syncTs  = cached.syncTs;
+    S.mt5modal.isDemo  = cached.isDemo || false;
     S.mt5modal.connected = true;
-    S.mt5modal.syncTs = Date.now();
+    mt5UpdateTopbarPill();
     mt5ModalStartRefresh();
+  }
+
+  // Step 2: fire a background refresh to get fresh data
+  (async () => {
+    await mt5ModalRefreshSilent();
+    if (!S.mt5modal.connected) {
+      // first-ever load with no cache — still mark connected
+      S.mt5modal.connected = true;
+      mt5UpdateTopbarPill();
+      mt5ModalStartRefresh();
+    }
   })();
 })();

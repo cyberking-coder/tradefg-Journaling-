@@ -655,6 +655,12 @@
         </div>
         <div class="topbar-right">
           <button class="topbar-icon-btn" onclick="toggleTheme()">🌙</button>
+          <div class="mt5-topbar-pill" id="mt5-topbar-pill" onclick="openMT5Modal()" style="display:none" title="MT5 Account — click to open dashboard">
+            <span class="mt5-live-dot" id="mt5-pill-dot"></span>
+            <span id="mt5-pill-acc">—</span>
+            <span class="mt5-pill-divider">·</span>
+            <span id="mt5-pill-sync">Live</span>
+          </div>
           <div class="topbar-add-wrap" id="topbar-add-wrap">
             <button class="topbar-add-btn" onclick="toggleAddMenu(event)" id="topbar-add-btn">+</button>
             <div class="add-menu" id="add-menu">
@@ -1167,6 +1173,7 @@
           <span id="mt5d-currency">USD</span>
           <span class="mt5-sep">·</span>
           <span>1:<strong id="mt5d-leverage">100</strong></span>
+          <span id="mt5-demo-badge" class="mt5-demo-badge" style="display:none">DEMO</span>
         </div>
         <div class="mt5-dash-actions">
           <span class="mt5-lastsync-txt" id="mt5-lastsync">Synced just now</span>
